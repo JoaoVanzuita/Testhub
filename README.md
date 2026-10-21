@@ -178,8 +178,6 @@ Todas as variáveis são definidas em `.env` (ignorado pelo Git). Os placeholder
 | `AI_PROVIDER_ENDPOINT` / `AI_PROVIDER_MODEL` / `AI_PROVIDER_API_KEY` / `AI_PROVIDER_TIMEOUT_SECONDS` | Endpoint base, **modelo** e segredo do provedor e tempo limite. O modelo é obrigatório — a URL final é `{endpoint}/models/{model}:generateContent`. Só têm efeito com `AI_PROVIDER_ACTIVE=true`. |
 
 > **Provedor de IA: Google Gemini (Google AI Studio, tier gratuito) — somente dados de
-> demonstração.** A integração está implementada em `specs/002-integracao-ia-gemini/`, com a
-> decisão registrada como **Aprovado (somente demonstração)** em `docs/ai-provider-decision.md`.
 > O **provedor e o plano podem mudar**: o adaptador (`apps/executions/ai_adapter.py`) é o ponto
 > único de troca e o prompt do sistema é um arquivo versionado em `apps/executions/prompts/`.
 >
@@ -210,9 +208,6 @@ Todas as variáveis são definidas em `.env` (ignorado pelo Git). Os placeholder
    docker compose run --rm web python manage.py seed_demo_data
    docker compose run --rm web python manage.py process_ai_reports --once
    ```
-
-Detalhes (contexto enviado, caminhos de falha e limites do tier gratuito):
-`specs/002-integracao-ia-gemini/quickstart.md`.
 
 ## Comandos de validação
 
@@ -256,16 +251,6 @@ está habilitado (`AI_PROVIDER_ACTIVE=false`, padrão — ver `docs/ai-provider-
 finaliza o relatório como `UNAVAILABLE` com a categoria segura `Configuration`, sem erro de
 execução.
 
-### Verificação operacional (T076, 2026-10-16)
-
-- **Lease reivindicado após reinício**: com um relatório em `PROCESSING` de *lease* expirado,
-  `docker compose restart web ai-worker` fez o worker reivindicar o trabalho
-  (`UNAVAILABLE`, `lease_token=None`) mantendo **um único** relatório por execução — nenhuma
-  duplicação.
-- **Volume preservado**: `docker compose down` manteve o volume `2-new-testhub_postgres_data`;
-  após `docker compose up -d`, os dados semeados continuaram acessíveis, confirmando a
-  persistência entre reinicializações.
-
 Os dados do PostgreSQL ficam no volume nomeado `postgres_data` e são preservados entre
 `docker compose down` e novas inicializações. Use `down -v` somente quando quiser descartar
 o banco local.
@@ -279,8 +264,6 @@ apps/              # aplicações de domínio (accounts, projects, testcases, ex
 templates/         # templates HTML compartilhados e componentes
 static/            # CSS e JavaScript sem frameworks
 tests/             # testes de regressão transversais (segurança, apresentação, acessibilidade)
-docs/              # decisões registradas (ex.: provedor de IA)
-specs/             # especificação, plano, tarefas e guia de validação da feature
 scripts/           # ferramentas de desenvolvimento (scripts/dev.sh)
 Dockerfile         # imagem da aplicação (Python base fixada, usuário não-root)
 compose.yaml       # serviços db, web e ai-worker, volume nomeado e healthcheck
