@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if mode == "edit" %}Editar projeto{% else %}Novo projeto{% endif %} — TestHub
+{% endblock %}
+
+{% block content %}
+  <nav class="breadcrumb" aria-label="Trilha">
+    <a href="{% url 'projects:project_list' %}">Projetos</a>
+    <span aria-hidden="true">/</span>
+    {% if mode == "edit" %}
+      <a href="{% url 'projects:project_detail' object.pk %}">{{ object.name }}</a>
+      <span aria-hidden="true">/</span>
+      <span>Editar projeto</span>
+    {% else %}
+      <span>Novo projeto</span>
+    {% endif %}
+  </nav>
+
+  <div class="page-header">
+    <div>
+      <h1>{% if mode == "edit" %}Editar projeto{% else %}Novo projeto{% endif %}</h1>
+      <p class="muted">
+        {% if mode == "edit" %}
+          Altere o nome, a descrição ou a situação do projeto.
+        {% else %}
+          Informe nome e uma descrição detalhada; a equipe de testadores é atribuída depois, na página Equipe.
+        {% endif %}
+      </p>
+    </div>
+  </div>
+
+  <form method="post" novalidate class="card">
+    {% csrf_token %}
+    {% include "components/_form_errors.html" with form=form %}
+
+    {% for field in form %}
+      {% include "components/_field.html" with field=field %}
+    {% endfor %}
+
+    <div class="form-actions">
+      <button type="submit" class="button button--primary">
+        {% if mode == "edit" %}Salvar alterações{% else %}Criar projeto{% endif %}
+      </button>
+      <a class="button button--secondary" href="{% url 'projects:project_list' %}">Cancelar</a>
+    </div>
+  </form>
+
+  {% if mode == "edit" %}
+    <section class="card" aria-labelledby="danger-title">
+      <h2 id="danger-title">Integridade do projeto</h2>
+      <p class="muted">Projetos com casos ou execuções associadas não podem ser excluídos; use a inativação para preservar o histórico.</p>
+      <div class="form-actions">
+        <form method="post" action="{% url 'projects:project_inactivate' object.pk %}"
+              data-confirm="Inativar {{ object.name }}? Os testadores deixam de ver o projeto e não podem iniciar novas execuções nele.">
+          {% csrf_token %}
+          <button type="submit" class="button button--secondary">Inativar projeto</button>
+        </form>
+        <form method="post" action="{% url 'projects:project_delete' object.pk %}"
+              data-confirm="Excluir {{ object.name }}? Esta ação é irreversível.">
+          {% csrf_token %}
+          <button type="submit" class="button button--danger">Excluir projeto</button>
+        </form>
+      </div>
+    </section>
+  {% endif %}
+{% endblock %}

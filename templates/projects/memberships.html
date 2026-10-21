@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Equipe de {{ project.name }} — TestHub{% endblock %}
+
+{% block content %}
+  <nav class="breadcrumb" aria-label="Trilha">
+    <a href="{% url 'projects:project_list' %}">Projetos</a>
+    <span aria-hidden="true">/</span>
+    <a href="{% url 'projects:project_detail' project.pk %}">{{ project.name }}</a>
+    <span aria-hidden="true">/</span>
+    <span>Equipe</span>
+  </nav>
+
+  <div class="page-header">
+    <div>
+      <h1>Equipe de {{ project.name }}</h1>
+      <p class="muted">Testadores com acesso aos casos de teste e às execuções deste projeto.</p>
+    </div>
+  </div>
+
+  <section class="card" aria-labelledby="assign-title">
+    <h2 id="assign-title">Atribuir testador</h2>
+    <form method="post" action="{% url 'projects:membership_add' project.pk %}" novalidate>
+      {% csrf_token %}
+      {% include "components/_form_errors.html" with form=form %}
+      {% include "components/_field.html" with field=form.user %}
+      <button type="submit" class="button button--primary">Atribuir</button>
+    </form>
+    {% if not form.user.field.queryset %}
+      <p class="muted">Todos os testadores ativos já estão atribuídos a este projeto. Ative um novo testador em Usuários para ampliar a equipe.</p>
+    {% endif %}
+  </section>
+
+  {% if memberships %}
+    <div class="table-wrap">
+      <table class="table">
+        <caption>Testadores atribuídos</caption>
+        <thead>
+          <tr>
+            <th scope="col">Nome</th>
+            <th scope="col">E-mail</th>
+            <th scope="col">Atribuído em</th>
+            <th scope="col">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for membership in memberships %}
+            <tr>
+              <td>{{ membership.user.name }}</td>
+              <td>{{ membership.user.email }}</td>
+              <td>{{ membership.assigned_at|date:"d/m/Y H:i" }}</td>
+              <td>
+                <form method="post"
+                      action="{% url 'projects:membership_remove' project.pk membership.user.pk %}"
+                      class="inline-form"
+                      data-confirm="Remover {{ membership.user.name }} do projeto? O acesso é revogado imediatamente e as execuções em andamento dele neste projeto são liberadas para outro testador.">
+                  {% csrf_token %}
+                  <button type="submit" class="link-button"
+                          aria-label="Remover {{ membership.user.name }} do projeto">Remover</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="muted">Remover um testador revoga o acesso dele na hora e libera as execuções em andamento que ele mantém neste projeto, para que outro testador assuma. Os apontamentos já registrados são preservados.</p>
+  {% else %}
+    <div class="empty-state">
+      <svg class="empty-state__icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+        <path d="M10 3.4a3 3 0 1 1 0 6 3 3 0 0 1 0-6z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M4.6 16.4c.5-2.6 2.7-4.2 5.4-4.2s4.9 1.6 5.4 4.2"
+              fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <h2 class="empty-state__title">Nenhum testador atribuído</h2>
+      <p class="empty-state__text">Use o formulário acima para atribuir o primeiro testador; ele passa a ver os casos de teste e as execuções deste projeto.</p>
+    </div>
+  {% endif %}
+{% endblock %}

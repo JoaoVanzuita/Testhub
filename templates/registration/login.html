@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Entrar — TestHub{% endblock %}
+
+{% block content %}
+  <section class="auth-card" aria-labelledby="login-title">
+    <h1 id="login-title">Entrar</h1>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "components/_form_errors.html" with form=form %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+      {% include "components/_field.html" with field=form.username field_label="E-mail" %}
+
+      {% include "components/_field.html" with field=form.password field_label="Senha" %}
+
+      <button type="submit" class="button button--primary">Entrar</button>
+    </form>
+  </section>
+{% endblock %}

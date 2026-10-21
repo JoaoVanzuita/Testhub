@@ -1,0 +1,145 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="TestHub — gestão de testes manuais e relatórios.">
+    <title>{% block title %}TestHub{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Fira+Sans:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  </head>
+  <body class="app-shell">
+    <a class="skip-link" href="#conteudo">Pular para o conteúdo principal</a>
+
+    <div class="shell{% if not user.is_authenticated %} shell--auth{% endif %}">
+      {% if user.is_authenticated %}
+        <aside class="sidebar" id="sidebar" aria-label="Navegação principal">
+          <a class="brand sidebar__brand" href="{% url 'projects:project_list' %}">TestHub</a>
+
+          <nav class="sidebar__nav" aria-label="Navegação de domínios">
+            <div class="nav-group">
+              <p class="nav-group__title" id="nav-trabalho">Trabalho</p>
+              <ul aria-labelledby="nav-trabalho">
+                <li>
+                  {% with rm=request.resolver_match %}
+                    <a href="{% url 'projects:project_list' %}"
+                       {% if rm.app_name == 'projects' or rm.app_name == 'testcases' or rm.app_name == 'executions' %}class="is-active"{% if rm.app_name == 'projects' and rm.url_name == 'project_list' %} aria-current="page"{% else %} aria-current="true"{% endif %}{% endif %}>Projetos</a>
+                  {% endwith %}
+                </li>
+              </ul>
+            </div>
+
+            {% if user.is_administrator %}
+              <div class="nav-group">
+                <p class="nav-group__title" id="nav-admin">Administração</p>
+                <ul aria-labelledby="nav-admin">
+                  <li>
+                    <a href="{% url 'accounts:user_list' %}"
+                       {% if request.resolver_match.url_name == 'user_list' or request.resolver_match.url_name == 'user_create' or request.resolver_match.url_name == 'user_edit' %}class="is-active" aria-current="page"{% endif %}>Usuários</a>
+                  </li>
+                </ul>
+              </div>
+            {% endif %}
+
+            <div class="nav-group">
+              <p class="nav-group__title" id="nav-conta">Conta</p>
+              <ul aria-labelledby="nav-conta">
+                <li>
+                  <a href="{% url 'accounts:profile' %}"
+                     {% if request.resolver_match.url_name == 'profile' or request.resolver_match.url_name == 'password_change' %}class="is-active" aria-current="page"{% endif %}>Meu perfil</a>
+                </li>
+              </ul>
+            </div>
+          </nav>
+
+          <div class="sidebar__user">
+            <p class="sidebar__user-name">{{ user.name }}</p>
+            <p class="sidebar__user-role">{{ user.get_role_display }}</p>
+          </div>
+        </aside>
+      {% endif %}
+
+      <div class="shell__main">
+        <header class="topbar">
+          {% if user.is_authenticated %}
+            <button type="button" class="topbar__toggle" data-drawer-toggle
+                    aria-controls="sidebar" aria-expanded="false" aria-label="Abrir navegação">
+              <svg class="icon" width="20" height="20" viewBox="0 0 20 20"
+                   aria-hidden="true" focusable="false">
+                <path d="M3 5h14M3 10h14M3 15h14" fill="none" stroke="currentColor"
+                      stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </button>
+          {% endif %}
+
+          <a class="brand topbar__brand{% if not user.is_authenticated %} topbar__brand--static{% endif %}"
+             href="{% url 'projects:project_list' %}">TestHub</a>
+
+          {% if user.is_authenticated %}
+            <p class="topbar__context">
+              {% with rm=request.resolver_match %}
+                {% if rm.url_name == 'project_list' %}Projetos
+                {% elif rm.url_name == 'project_detail' %}Projeto
+                {% elif rm.url_name == 'project_create' or rm.url_name == 'project_edit' %}Projeto
+                {% elif rm.url_name == 'memberships' %}Equipe
+                {% elif rm.url_name == 'case_list' %}Casos de teste
+                {% elif rm.url_name == 'case_create' or rm.url_name == 'case_edit' or rm.url_name == 'case_detail' %}Caso de teste
+                {% elif rm.url_name == 'execution_create' %}Nova execução
+                {% elif rm.url_name == 'execution_detail' %}Execução
+                {% elif rm.url_name == 'report_detail' %}Relatório
+                {% elif rm.url_name == 'history_list' %}Histórico
+                {% elif rm.url_name == 'history_compare' %}Comparação
+                {% elif rm.url_name == 'user_list' %}Usuários
+                {% elif rm.url_name == 'user_create' or rm.url_name == 'user_edit' %}Usuário
+                {% elif rm.url_name == 'profile' %}Meu perfil
+                {% elif rm.url_name == 'password_change' %}Alterar senha
+                {% else %}TestHub{% endif %}
+              {% endwith %}
+            </p>
+
+            <div class="topbar__actions">
+              <form method="post" action="{% url 'accounts:logout' %}" class="inline-form">
+                {% csrf_token %}
+                <button type="submit" class="link-button">Sair</button>
+              </form>
+            </div>
+          {% endif %}
+        </header>
+
+        <main id="conteudo" class="site-main">
+          {% include "components/messages.html" %}
+          {% block content %}{% endblock %}
+        </main>
+
+        <footer class="site-footer">
+          <p>TestHub — gestão de testes manuais.</p>
+        </footer>
+      </div>
+
+      {% if user.is_authenticated %}
+        <div class="scrim" data-drawer-scrim aria-hidden="true"></div>
+
+        <div class="modal" data-confirm-modal hidden>
+          <div class="modal__scrim" data-confirm-cancel aria-hidden="true"></div>
+          <div class="modal__panel" role="dialog" aria-modal="true"
+               aria-labelledby="confirm-modal-title" aria-describedby="confirm-modal-message">
+            <h2 id="confirm-modal-title" class="modal__title">Confirmar ação</h2>
+            <p id="confirm-modal-message" class="modal__message" data-confirm-message></p>
+            <div class="modal__actions">
+              <button type="button" class="button button--secondary" data-confirm-cancel>Cancelar</button>
+              <button type="button" class="button button--danger" data-confirm-accept>Confirmar</button>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <script src="{% static 'js/app.js' %}" defer></script>
+    <script src="{% static 'js/shell.js' %}" defer></script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% load static %}
+{% load execution_ui %}
+
+{% block title %}Execução #{{ execution.pk }} — TestHub{% endblock %}
+
+{% block content %}
+  {% execution_summary execution_cases as summary %}
+
+  <nav class="breadcrumb" aria-label="Trilha">
+    <a href="{% url 'projects:project_list' %}">Projetos</a>
+    <span aria-hidden="true">/</span>
+    <a href="{% url 'projects:project_detail' execution.project.pk %}">{{ execution.project.name }}</a>
+    <span aria-hidden="true">/</span>
+    <span>Execução #{{ execution.pk }}</span>
+  </nav>
+
+  <div class="page-header">
+    <h1>Execução #{{ execution.pk }}</h1>
+    <span class="status status--warning">Em andamento</span>
+  </div>
+
+  <section class="runner-summary" aria-labelledby="runner-summary-title">
+    <div class="runner-summary__context">
+      <h2 id="runner-summary-title">Progresso da execução</h2>
+      <dl class="detail-list">
+        <dt>Projeto</dt>
+        <dd>{{ execution.project.name }}</dd>
+        <dt>Responsável atual</dt>
+        <dd>{% if current_owner %}{{ current_owner.name }}{% else %}Sem responsável — aguardando assunção{% endif %}</dd>
+        <dt>Iniciada por</dt>
+        <dd>{{ execution.created_by.name }}</dd>
+        <dt>Iniciada em</dt>
+        <dd>{{ execution.started_at|date:"d/m/Y H:i" }}</dd>
+      </dl>
+    </div>
+
+    <div class="runner-summary__progress">
+      <div class="progress" role="img" data-execution-progress
+           aria-label="{{ summary.assessed_steps }} de {{ summary.total_steps }} passos avaliados">
+        <span class="progress__bar" data-execution-progress-bar style="--value: {{ summary.percent }}%"></span>
+      </div>
+      <p class="runner-summary__label" data-execution-progress-label>{{ summary.assessed_steps }} de {{ summary.total_steps }} passos avaliados</p>
+
+      <ul class="runner-stats">
+        <li class="runner-stat">
+          <span class="runner-stat__value" data-summary-cases>{{ summary.total_cases }}</span>
+          <span class="runner-stat__label">casos</span>
+        </li>
+        <li class="runner-stat">
+          <span class="runner-stat__value" data-summary-approved>{{ summary.approved }}</span>
+          <span class="runner-stat__label">aprovados</span>
+        </li>
+        <li class="runner-stat">
+          <span class="runner-stat__value" data-summary-reproved>{{ summary.reproved }}</span>
+          <span class="runner-stat__label">reprovados</span>
+        </li>
+        <li class="runner-stat">
+          <span class="runner-stat__value" data-summary-pending>{{ summary.pending }}</span>
+          <span class="runner-stat__label">pendentes</span>
+        </li>
+        <li class="runner-stat">
+          <span class="runner-stat__value" data-summary-not-started>{{ summary.not_started }}</span>
+          <span class="runner-stat__label">não iniciados</span>
+        </li>
+      </ul>
+
+      {% if can_operate %}
+        <p class="runner-summary__next" data-next-pending-summary>
+          {% if summary.next_pending_pk %}Próximo passo pendente destacado abaixo.{% else %}Todos os passos avaliados. Você pode concluir a execução.{% endif %}
+        </p>
+      {% endif %}
+    </div>
+  </section>
+
+  {% if can_operate %}
+    <section class="card" aria-labelledby="execution-controls-title">
+      <h2 id="execution-controls-title">Condução</h2>
+      <div class="form-actions">
+        <form method="post" action="{% url 'executions:execution_pause' execution.pk %}" class="inline-form">
+          {% csrf_token %}
+          <button type="submit" class="button button--secondary">Pausar</button>
+        </form>
+        <form method="post" action="{% url 'executions:execution_resume' execution.pk %}" class="inline-form">
+          {% csrf_token %}
+          <button type="submit" class="button button--secondary">Retomar</button>
+        </form>
+        <form method="post" action="{% url 'executions:execution_release' execution.pk %}" class="inline-form" data-confirm="Liberar a condução desta execução?">
+          {% csrf_token %}
+          <button type="submit" class="button button--secondary">Liberar condução</button>
+        </form>
+        <form method="post" action="{% url 'executions:execution_complete' execution.pk %}" class="inline-form" data-confirm="Concluir a execução? Após concluir, os resultados não poderão mais ser alterados.">
+          {% csrf_token %}
+          <button type="submit" class="button button--primary">Concluir execução</button>
+        </form>
+      </div>
+
+      <form method="post" action="{% url 'executions:execution_handoff' execution.pk %}" class="stack">
+        {% csrf_token %}
+        <div class="field">
+          <label for="{{ handoff_form.successor.id_for_label }}">{{ handoff_form.successor.label }}</label>
+          {{ handoff_form.successor }}
+          <p class="helptext">A transferência encerra sua condução e mantém todos os apontamentos.</p>
+          {% for error in handoff_form.successor.errors %}
+            <p class="field-error" role="alert">{{ error }}</p>
+          {% endfor %}
+        </div>
+        <button type="submit" class="button button--secondary">Transferir condução</button>
+      </form>
+    </section>
+  {% elif can_assume %}
+    <section class="card" aria-labelledby="execution-assume-title">
+      <h2 id="execution-assume-title">Execução sem responsável</h2>
+      <p class="muted">Esta execução foi liberada. Como Testador autorizado ao projeto, você pode assumir a condução sem perder os apontamentos existentes.</p>
+      <form method="post" action="{% url 'executions:execution_assume' execution.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="button button--primary">Assumir condução</button>
+      </form>
+    </section>
+  {% endif %}
+
+  {% include "executions/_case_board.html" %}
+
+  {% for execution_case in execution_cases %}
+    <section class="execution-case" data-execution-case data-pk="{{ execution_case.pk }}" data-status="{{ execution_case.status }}" aria-labelledby="execution-case-{{ execution_case.pk }}-title">
+      <header class="execution-case__head">
+        <h2 id="execution-case-{{ execution_case.pk }}-title">{{ execution_case.title }}</h2>
+        <span class="status {{ execution_case.status|case_status_class }}" data-case-status>{{ execution_case.get_status_display }}</span>
+      </header>
+      {% if execution_case.total_steps %}
+        <p class="execution-progress">
+          <progress data-case-progress max="{{ execution_case.total_steps }}" value="{{ execution_case.assessed_steps }}">{{ execution_case.progress_label }}</progress>
+          <span data-case-progress-label>{{ execution_case.progress_label }}</span>
+        </p>
+      {% endif %}
+      {% if execution_case.description %}
+        <p class="muted">{{ execution_case.description }}</p>
+      {% endif %}
+      {% if execution_case.preconditions %}
+        <p class="muted">Pré-condições: {{ execution_case.preconditions }}</p>
+      {% endif %}
+
+      <ol class="execution-steps">
+        {% for step in execution_case.steps.all %}
+          <li class="execution-step{% if step.pk == summary.next_pending_pk %} execution-step--next{% endif %}"
+              data-step-row
+              data-outcome="{{ step.outcome|default:'' }}"
+              {% if step.pk == summary.next_pending_pk %}data-next-pending{% endif %}>
+            <p class="execution-step__action">
+              <span class="execution-step__position">{{ step.snapshot_position }}.</span>
+              <strong>{{ step.action }}</strong>
+              {% if step.pk == summary.next_pending_pk %}
+                <span class="badge badge--warning" data-next-pending-badge>Próximo passo pendente</span>
+              {% endif %}
+            </p>
+            <p class="muted">Esperado: {{ step.expected_result }}</p>
+            <p>
+              Resultado:
+              <span class="status {{ step.outcome|outcome_status_class }}" data-step-outcome data-outcome="{{ step.outcome|default:'' }}">{{ step.get_outcome_display|default:"Não avaliado" }}</span>
+            </p>
+
+            {% if can_operate %}
+              <form method="post" action="{% url 'executions:execution_step_update' execution.pk step.pk %}" class="step-result" data-step-result-form>
+                {% csrf_token %}
+                <fieldset class="step-outcome">
+                  <legend class="visually-hidden">Resultado do passo {{ step.snapshot_position }}</legend>
+                  <div class="step-outcome__actions">
+                    <button type="submit" name="outcome" value="PASSED"
+                            class="step-action step-action--passed{% if step.outcome == 'PASSED' %} is-active{% endif %}"
+                            data-step-action="PASSED">Passou</button>
+                    <button type="submit" name="outcome" value="FAILED"
+                            class="step-action step-action--failed{% if step.outcome == 'FAILED' %} is-active{% endif %}"
+                            data-step-action="FAILED">Falhou</button>
+                    <button type="submit" name="outcome" value="BLOCKED"
+                            class="step-action step-action--blocked{% if step.outcome == 'BLOCKED' %} is-active{% endif %}"
+                            data-step-action="BLOCKED">Bloqueado</button>
+                  </div>
+                </fieldset>
+                <div class="field step-result__observation">
+                  <label for="observation-{{ step.pk }}">Observação</label>
+                  <textarea id="observation-{{ step.pk }}" name="observation" rows="2"
+                            aria-describedby="observation-help-{{ step.pk }}">{{ step.observation }}</textarea>
+                  <p class="helptext" id="observation-help-{{ step.pk }}">Opcional. Descreva evidências, sobretudo em passos com Falhou ou Bloqueado.</p>
+                </div>
+                <div class="step-result__footer">
+                  <button type="submit" name="outcome" value="{{ step.outcome }}"
+                          class="button button--secondary" data-step-save
+                          {% if not step.outcome %}disabled aria-disabled="true" title="Escolha Passou, Falhou ou Bloqueado para salvar a observação"{% endif %}>Salvar resultado</button>
+                  <p class="step-feedback" data-step-feedback aria-live="polite"></p>
+                </div>
+              </form>
+            {% else %}
+              {% if step.observation %}
+                <p>Observação: {{ step.observation }}</p>
+              {% endif %}
+            {% endif %}
+          </li>
+        {% empty %}
+          <li class="muted">Este caso não possui passos registrados.</li>
+        {% endfor %}
+      </ol>
+    </section>
+  {% empty %}
+    <p class="muted">Nenhum caso selecionado nesta execução.</p>
+  {% endfor %}
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/execution_results.js' %}" defer></script>
+{% endblock %}

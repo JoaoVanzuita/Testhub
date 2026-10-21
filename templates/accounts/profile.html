@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Meu perfil — TestHub{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h1>Meu perfil</h1>
+      <p class="muted">Seus dados de acesso e o nome exibido nas execuções e relatórios do TestHub.</p>
+    </div>
+  </div>
+
+  <section class="card" aria-labelledby="identity-title">
+    <h2 id="identity-title">Dados da conta</h2>
+    <dl class="detail-list">
+      <dt>E-mail</dt>
+      <dd>{{ user.email }} <span class="muted">(gerenciado por um Administrador)</span></dd>
+      <dt>Perfil</dt>
+      <dd>{{ user.get_role_display }}</dd>
+    </dl>
+  </section>
+
+  <form method="post" novalidate class="card" aria-labelledby="profile-form-title">
+    <h2 id="profile-form-title">Nome de exibição</h2>
+    <p class="muted">Aqui você altera apenas o nome; o e-mail e o perfil são gerenciados por um Administrador.</p>
+
+    {% csrf_token %}
+    {% include "components/_form_errors.html" with form=form %}
+
+    {% for field in form %}
+      {% include "components/_field.html" with field=field %}
+    {% endfor %}
+
+    <div class="form-actions">
+      <button type="submit" class="button button--primary">Salvar perfil</button>
+    </div>
+  </form>
+
+  <section class="card" aria-labelledby="password-title">
+    <h2 id="password-title">Credenciais</h2>
+    <p class="muted">Redefina a senha informando a senha atual e a confirmação da nova senha.</p>
+    <p><a class="button button--secondary" href="{% url 'accounts:password_change' %}">Alterar senha</a></p>
+  </section>
+{% endblock %}

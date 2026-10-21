@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% load l10n %}
+
+{% block title %}Relatório da execução #{{ execution.pk }} — TestHub{% endblock %}
+
+{% block content %}
+  <nav class="breadcrumb" aria-label="Trilha">
+    <a href="{% url 'projects:project_list' %}">Projetos</a>
+    <span aria-hidden="true">/</span>
+    <a href="{% url 'projects:project_detail' execution.project.pk %}">{{ execution.project.name }}</a>
+    <span aria-hidden="true">/</span>
+    <a href="{% url 'executions:execution_detail' execution.pk %}">Execução #{{ execution.pk }}</a>
+    <span aria-hidden="true">/</span>
+    <span>Relatório</span>
+  </nav>
+
+  <div class="page-header">
+    <h1>Relatório da execução #{{ execution.pk }}</h1>
+    <span class="status status--ok">Concluída</span>
+  </div>
+
+  {# ------------------------------------------------------------------ #}
+  {# Recorded, verifiable statistics — always available (FR-030, FR-033) #}
+  {# ------------------------------------------------------------------ #}
+  <section class="card" aria-labelledby="recorded-metrics-title" data-recorded-metrics>
+    <h2 id="recorded-metrics-title">Métricas registradas</h2>
+    <p class="muted">
+      Dados determinísticos derivados dos apontamentos persistidos. Esta seção não depende da
+      análise de IA e é imutável após a conclusão.
+    </p>
+
+    <ul class="stat-grid">
+      <li class="stat-card">
+        <span class="stat-card__value">{{ report.selected_cases }}</span>
+        <span class="stat-card__label">Casos selecionados</span>
+      </li>
+      <li class="stat-card">
+        <span class="stat-card__value">{{ report.approved_cases }}</span>
+        <span class="stat-card__label">Casos aprovados</span>
+      </li>
+      <li class="stat-card">
+        <span class="stat-card__value">{{ report.reproved_cases }}</span>
+        <span class="stat-card__label">Casos reprovados</span>
+      </li>
+      <li class="stat-card">
+        <span class="stat-card__value">{{ report.pending_cases }}</span>
+        <span class="stat-card__label">Casos pendentes</span>
+      </li>
+      <li class="stat-card">
+        <span class="stat-card__value">{{ report.not_started_cases }}</span>
+        <span class="stat-card__label">Casos não iniciados</span>
+      </li>
+      <li class="stat-card stat-card--emphasis">
+        <span class="stat-card__value" data-success-rate>{{ report.success_rate|unlocalize }}%</span>
+        <span class="stat-card__label">Taxa de sucesso</span>
+      </li>
+    </ul>
+    <p class="muted">
+      Taxa de sucesso = casos aprovados ÷ casos selecionados × 100 (casos pendentes e não
+      iniciados permanecem no denominador).
+    </p>
+
+    <div class="table-wrap">
+      <table class="table">
+        <caption>Resultados dos passos registrados</caption>
+        <thead>
+          <tr>
+            <th scope="col">Passou</th>
+            <th scope="col">Falhou</th>
+            <th scope="col">Bloqueado</th>
+            <th scope="col">Não avaliados</th>
+            <th scope="col">Com observação de falha/bloqueio</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="num">{{ report.passed_steps }}</td>
+            <td class="num">{{ report.failed_steps }}</td>
+            <td class="num">{{ report.blocked_steps }}</td>
+            <td class="num">{{ report.unevaluated_steps }}</td>
+            <td class="num" data-failure-observations>{{ report.failure_observations }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {# ------------------------------------------------------------------ #}
+  {# AI interpretation — clearly separated from recorded facts (FR-033) #}
+  {# ------------------------------------------------------------------ #}
+  <section class="card ai-insight" aria-labelledby="ai-analysis-title" data-ai-analysis>
+    <h2 id="ai-analysis-title">
+      Análise complementar (IA)
+      {% if report.has_analysis %}<span class="badge badge--ai">Interpretação de IA</span>{% endif %}
+      <span class="status{% if report.is_ai_processing %} status--warning{% elif report.has_analysis %} status--ok{% else %} status--off{% endif %}" data-ai-status>
+        {{ report.ai_status_label }}
+      </span>
+    </h2>
+
+    {% if report.is_ai_processing %}
+      <p class="muted" role="status">
+        A análise está em processamento. As métricas registradas acima já estão disponíveis; a
+        interpretação da IA aparecerá aqui quando o processamento terminar.
+      </p>
+    {% elif not report.has_analysis %}
+      <p class="muted" role="status" data-ai-unavailable>
+        A análise de IA está indisponível para esta execução. As métricas registradas permanecem
+        válidas e consultáveis.
+      </p>
+      {% if report.failure_category %}
+        <p class="muted">Motivo: {{ report.get_failure_category_display }}.</p>
+      {% endif %}
+    {% else %}
+      <p class="muted">
+        O texto abaixo é <strong>interpretação gerada por IA</strong>, não um dado registrado nem
+        verificado. Trate hipóteses como possibilidades a investigar.
+      </p>
+
+      {% if report.analysis.insufficient_evidence %}
+        <p class="status status--off" data-insufficient-evidence>
+          Análise inconclusiva: os dados apontados não sustentam conclusões relevantes.
+        </p>
+      {% endif %}
+
+      {% if report.analysis.executive_summary %}
+        <h3>Resumo executivo</h3>
+        <p>{{ report.analysis.executive_summary }}</p>
+      {% endif %}
+
+      {% if report.analysis.observed_patterns %}
+        <h3>Padrões observados</h3>
+        <ul data-observed-patterns>
+          {% for pattern in report.analysis.observed_patterns %}
+            <li>
+              <p>{{ pattern.description }}</p>
+              {% if pattern.references %}
+                <p class="muted">Referências: {{ pattern.references|join:", " }}</p>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      {% if report.analysis.cause_hypotheses %}
+        <h3>Hipóteses de causa</h3>
+        <ul data-cause-hypotheses>
+          {% for hypothesis in report.analysis.cause_hypotheses %}
+            <li>
+              <p>
+                <span class="status status--warning">Hipótese / interpretação</span>
+                {{ hypothesis.description }}
+              </p>
+              {% if hypothesis.references %}
+                <p class="muted">Referências: {{ hypothesis.references|join:", " }}</p>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      {% if report.analysis.suggestions %}
+        <h3>Sugestões de investigação/correção</h3>
+        <ul data-suggestions>
+          {% for suggestion in report.analysis.suggestions %}
+            <li>{{ suggestion }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      {% if report.analysis.historical_comparison %}
+        <h3>Comparação histórica</h3>
+        {% if report.analysis.historical_comparison.summary %}
+          <p>{{ report.analysis.historical_comparison.summary }}</p>
+        {% else %}
+          <p>{{ report.analysis.historical_comparison }}</p>
+        {% endif %}
+      {% endif %}
+    {% endif %}
+  </section>
+{% endblock %}

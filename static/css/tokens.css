@@ -1,0 +1,219 @@
+/* TestHub design tokens — single source of visual values.
+ * Pure CSS custom properties; no dependency, no build step.
+ * Compatibility aliases (--space, --radius) below keep the existing app.css
+ * working during the incremental migration.
+ * Spec: docs/design-system.md §3. */
+
+:root {
+  /* ============================================================= */
+  /* COR — neutros (estrutura)                                     */
+  /* ============================================================= */
+  --color-bg: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-surface-sunken: #f1f3f6;   /* cabeçalho de tabela, poços */
+  --color-surface-raised: #ffffff;   /* flutuantes (menu/modal), com sombra */
+  --color-border: #e3e6eb;
+  --color-border-strong: #cbd2db;
+  /* Boundary of interactive controls. WCAG 1.4.11 asks for >=3:1 against the
+     adjacent colour; --color-border/-strong are decorative separators and only
+     reach 1.25/1.52:1, so controls use this darker value (3.77:1 on surface). */
+  --color-border-control: #7b8494;
+  --color-text: #1a1f2b;
+  --color-text-muted: #5a6472;       /* atende 4.5:1 sobre surface */
+  --color-text-subtle: #8a93a1;      /* uso não-textual / desabilitado */
+  --color-text-inverse: #ffffff;
+
+  /* ============================================================= */
+  /* COR — ação / brand                                            */
+  /* ============================================================= */
+  --color-primary: #1d4ed8;
+  --color-primary-hover: #1e40af;
+  --color-primary-active: #1b3a9c;
+  --color-primary-soft: #eaf0fe;
+  --color-on-primary: #ffffff;
+
+  /* ============================================================= */
+  /* COR — semântica de estado (NUNCA usada para cromo)            */
+  /* ============================================================= */
+  --color-success: #15803d;
+  --color-success-soft: #e7f4ec;
+  --color-success-border: #bfe3cd;
+
+  --color-danger: #b91c1c;
+  --color-danger-soft: #fbeaea;
+  --color-danger-border: #f0c4c4;
+
+  --color-warning: #b45309;          /* = Bloqueado / Pendente / atenção */
+  --color-warning-soft: #fbf0e2;
+  --color-warning-border: #eed6b0;
+  /* Text-sized amber on --color-warning-soft: the base --color-warning only
+     reaches 4.46:1 there, so denser copy uses this darker shade (6.30:1). */
+  --color-warning-strong: #92400e;
+
+  --color-info: #1d4ed8;
+  --color-info-soft: #eaf0fe;
+
+  --color-neutral: #5a6472;          /* Não iniciado / inativo */
+  --color-neutral-soft: #eef1f5;
+
+  /* ============================================================= */
+  /* COR — acento IA (único acento saturado não-semântico)         */
+  /* ============================================================= */
+  --color-ai: #6d28d9;
+  --color-ai-soft: #f3effd;
+  --color-ai-border: #ddd2fa;
+
+  /* ============================================================= */
+  /* FOCO                                                          */
+  /* ============================================================= */
+  --color-focus: var(--color-primary);
+  --focus-ring: 0 0 0 3px rgba(29, 78, 216, 0.30);
+  --focus-ring-offset: 2px;
+
+  /* ============================================================= */
+  /* TIPOGRAFIA                                                    */
+  /* ============================================================= */
+  --font-sans: "Fira Sans", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "Fira Code", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  --text-2xs: 0.6875rem;  /* 11px — metadados densos          */
+  --text-xs: 0.75rem;     /* 12px — rótulos, captions         */
+  --text-sm: 0.8125rem;   /* 13px — UI densa, tabelas         */
+  --text-md: 0.875rem;    /* 14px — UI padrão                 */
+  --text-base: 1rem;      /* 16px — leitura                   */
+  --text-lg: 1.125rem;    /* 18px — subtítulo                 */
+  --text-xl: 1.375rem;    /* 22px — título de seção           */
+  --text-2xl: 1.75rem;    /* 28px — título de página          */
+  --text-3xl: 2.25rem;    /* 36px — destaque numérico (KPI)   */
+
+  --leading-tight: 1.2;
+  --leading-snug: 1.35;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  --tracking-tight: -0.011em;
+  --tracking-normal: 0;
+  --tracking-caps: 0.06em;   /* só para rótulo micro em caixa alta */
+
+  /* ============================================================= */
+  /* ESPAÇAMENTO (base 4px; densidade 8/10)                        */
+  /* ============================================================= */
+  --space-0: 0;
+  --space-1: 0.25rem;  /*  4 */
+  --space-2: 0.5rem;   /*  8 */
+  --space-3: 0.75rem;  /* 12 */
+  --space-4: 1rem;     /* 16 */
+  --space-5: 1.25rem;  /* 20 */
+  --space-6: 1.5rem;   /* 24 */
+  --space-8: 2rem;     /* 32 */
+  --space-10: 2.5rem;  /* 40 */
+  --space-12: 3rem;    /* 48 */
+
+  /* ============================================================= */
+  /* RAIOS                                                         */
+  /* ============================================================= */
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 999px;   /* APENAS badges/avatares, não botões */
+
+  /* ============================================================= */
+  /* BORDAS                                                        */
+  /* ============================================================= */
+  --border-width: 1px;
+  --border: var(--border-width) solid var(--color-border);
+  --border-strong: var(--border-width) solid var(--color-border-strong);
+
+  /* ============================================================= */
+  /* SOMBRAS (uso contido — só flutuantes)                         */
+  /* ============================================================= */
+  --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-sm: 0 1px 3px rgba(16, 24, 40, 0.08), 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.10);
+  --shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.14);
+
+  /* ============================================================= */
+  /* SOBREPOSIÇÃO (scrim de drawer/modal)                          */
+  /* ============================================================= */
+  --color-scrim: rgba(16, 24, 40, 0.45);
+
+  /* ============================================================= */
+  /* TRANSIÇÕES                                                    */
+  /* ============================================================= */
+  --duration-instant: 80ms;
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 240ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  /* ============================================================= */
+  /* LAYOUT / CONTROLES                                            */
+  /* ============================================================= */
+  --sidebar-width: 15rem;             /* 240px */
+  --sidebar-width-collapsed: 3.5rem;  /*  56px */
+  --topbar-height: 3.5rem;            /*  56px */
+  --content-max: 80rem;               /* 1280px */
+  --control-height-sm: 1.75rem;       /*  28px */
+  --control-height-md: 2.25rem;       /*  36px */
+  --control-height-lg: 2.75rem;       /*  44px — alvo de toque */
+
+  /* ============================================================= */
+  /* PROFUNDIDADE (z-index)                                        */
+  /* ============================================================= */
+  --z-base: 0;
+  --z-sticky: 100;
+  --z-dropdown: 1000;
+  --z-drawer: 1100;
+  --z-modal: 1200;
+  --z-toast: 1300;
+
+  /* ============================================================= */
+  /* COMPATIBILIDADE (migração incremental do app.css atual)       */
+  /* ============================================================= */
+  --space: var(--space-4);
+  --radius: var(--radius-md);
+}
+
+/* Tema escuro — escopo OPCIONAL, fora desta entrega; scaffold pronto */
+[data-theme="dark"] {
+  --color-bg: #0f1420;
+  --color-surface: #161c29;
+  --color-surface-sunken: #111725;
+  --color-surface-raised: #1b2231;
+  --color-border: #29303e;
+  --color-border-strong: #3a4354;
+  --color-text: #e7eaf0;
+  --color-text-muted: #9aa4b2;
+  --color-text-subtle: #6b7486;
+  --color-primary: #5b8def;
+  --color-primary-hover: #7aa2f7;
+  --color-primary-soft: #1d2a44;
+  --color-success: #4ade80;
+  --color-success-soft: #14291d;
+  --color-danger: #f87171;
+  --color-danger-soft: #2a1717;
+  --color-warning: #fbbf24;
+  --color-warning-soft: #2a2113;
+  --color-ai: #a78bfa;
+  --color-ai-soft: #211a33;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

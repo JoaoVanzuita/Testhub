@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+  {% if mode == "edit" %}Editar caso de teste{% else %}Novo caso de teste{% endif %} — TestHub
+{% endblock %}
+
+{% block content %}
+  <nav class="breadcrumb" aria-label="Trilha">
+    <a href="{% url 'projects:project_list' %}">Projetos</a>
+    <span aria-hidden="true">/</span>
+    <a href="{% url 'projects:project_detail' project.pk %}">{{ project.name }}</a>
+    <span aria-hidden="true">/</span>
+    <a href="{% url 'testcases:case_list' project.pk %}">Casos de teste</a>
+    <span aria-hidden="true">/</span>
+    <span>{% if mode == "edit" %}Editar{% else %}Novo{% endif %}</span>
+  </nav>
+
+  <div class="page-header">
+    <div>
+      <h1>{% if mode == "edit" %}Editar caso de teste{% else %}Novo caso de teste{% endif %}</h1>
+      <p class="muted">
+        {% if mode == "edit" %}
+          Ajuste a identificação ou reordene os passos. A ordem enviada é normalizada e preservada no histórico de execuções.
+        {% else %}
+          Preencha a identificação e cadastre ao menos um passo ativo com ação e resultado esperado.
+        {% endif %}
+      </p>
+    </div>
+    {% if mode == "edit" %}
+      {% if case.is_active %}
+        <span class="status status--ok">Ativo</span>
+      {% else %}
+        <span class="status status--off">Inativo</span>
+      {% endif %}
+    {% else %}
+      <span class="badge badge--neutral">Novo caso</span>
+    {% endif %}
+  </div>
+
+  <form method="post" novalidate class="case-form" data-steps-formset>
+    {% csrf_token %}
+    {% include "components/_form_errors.html" with form=form formset=formset %}
+
+    <section class="card" aria-labelledby="case-identity-title">
+      <h2 id="case-identity-title">Identificação</h2>
+      {% for field in form %}
+        {% include "components/_field.html" with field=field %}
+      {% endfor %}
+    </section>
+
+    <section class="case-steps" aria-labelledby="steps-title">
+      <div class="section-head">
+        <div>
+          <h2 id="steps-title">Passos ordenados</h2>
+          <p class="muted">O caso precisa de ao menos um passo ativo com ação e resultado esperado. A ordem definida aqui é preservada no histórico de execuções.</p>
+        </div>
+      </div>
+
+      {{ formset.management_form }}
+
+      <div class="step-list" data-steps-container>
+        {% for step_form in formset %}
+          {% include "testcases/_step_form.html" with step_form=step_form index=forloop.counter %}
+        {% endfor %}
+      </div>
+
+      <template data-step-empty-form>
+        {% include "testcases/_step_form.html" with step_form=formset.empty_form %}
+      </template>
+
+      <p class="case-steps__add">
+        <button type="button" class="button button--secondary" data-step-add>
+          <svg class="button__icon" width="16" height="16" viewBox="0 0 16 16"
+               aria-hidden="true" focusable="false">
+            <path d="M8 3.5v9M3.5 8h9" fill="none" stroke="currentColor"
+                  stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Adicionar passo
+        </button>
+      </p>
+
+      <p class="visually-hidden" role="status" data-steps-status></p>
+    </section>
+
+    <div class="form-actions case-form__actions">
+      <button type="submit" class="button button--primary">Salvar</button>
+      {% if mode == "edit" %}
+        <a class="button button--secondary" href="{% url 'testcases:case_detail' case.pk %}">Cancelar</a>
+      {% else %}
+        <a class="button button--secondary" href="{% url 'testcases:case_list' project.pk %}">Cancelar</a>
+      {% endif %}
+    </div>
+  </form>
+
+  {% if mode == "edit" %}
+    <section class="card" aria-labelledby="danger-title">
+      <h2 id="danger-title">Integridade do caso</h2>
+      <p class="muted">Casos referenciados por execuções anteriores não podem ser excluídos; use a inativação para preservar o histórico.</p>
+      <div class="form-actions">
+        <form method="post" action="{% url 'testcases:case_inactivate' case.pk %}" data-confirm="Inativar {{ case.title }}?">
+          {% csrf_token %}
+          <button type="submit" class="button button--secondary">Inativar caso</button>
+        </form>
+        <form method="post" action="{% url 'testcases:case_delete' case.pk %}" data-confirm="Excluir {{ case.title }}? Esta ação é irreversível.">
+          {% csrf_token %}
+          <button type="submit" class="button button--danger">Excluir caso</button>
+        </form>
+      </div>
+    </section>
+  {% endif %}
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/testcase_steps.js' %}" defer></script>
+{% endblock %}

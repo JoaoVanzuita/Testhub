@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Casos de teste — {{ project.name }} — TestHub{% endblock %}
+
+{% block content %}
+  <nav class="breadcrumb" aria-label="Trilha">
+    <a href="{% url 'projects:project_list' %}">Projetos</a>
+    <span aria-hidden="true">/</span>
+    <a href="{% url 'projects:project_detail' project.pk %}">{{ project.name }}</a>
+    <span aria-hidden="true">/</span>
+    <span>Casos de teste</span>
+  </nav>
+
+  <div class="page-header">
+    <div>
+      <h1>Casos de teste</h1>
+      <p class="muted">
+        Casos do projeto <a href="{% url 'projects:project_detail' project.pk %}">{{ project.name }}</a>.
+        Cada caso reúne pré-condições e passos ordenados para uma execução manual.
+      </p>
+    </div>
+    {% if can_edit %}
+      <a class="button button--primary" href="{% url 'testcases:case_create' project.pk %}">Novo caso</a>
+    {% endif %}
+  </div>
+
+  {% if cases %}
+    <div class="table-wrap">
+      <table class="table">
+        <caption>Casos de teste do projeto</caption>
+        <thead>
+          <tr>
+            <th scope="col">Título</th>
+            <th scope="col" class="num">Passos</th>
+            <th scope="col">Situação</th>
+            <th scope="col">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for case in cases %}
+            <tr{% if not case.is_active %} class="is-inactive"{% endif %}>
+              <th scope="row">
+                <a href="{% url 'testcases:case_detail' case.pk %}">{{ case.title }}</a>
+              </th>
+              <td class="num">{{ case.steps.all|length }}</td>
+              <td>
+                {% if case.is_active %}
+                  <span class="status status--ok">Ativo</span>
+                {% else %}
+                  <span class="status status--off">Inativo</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="row-actions">
+                  <a href="{% url 'testcases:case_detail' case.pk %}"
+                     aria-label="Detalhes de {{ case.title }}">Detalhes</a>
+                  {% if can_edit %}
+                    <a href="{% url 'testcases:case_edit' case.pk %}"
+                       aria-label="Editar {{ case.title }}">Editar</a>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <svg class="empty-state__icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+        <path d="M5 3.5h7.2L16 7.3v9.2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-12a1 1 0 0 1 1-1z"
+              fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M7 9.6l1.4 1.4L11 8.4"
+              fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M7 13.6h6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <h2 class="empty-state__title">Nenhum caso de teste neste projeto</h2>
+      {% if can_edit %}
+        <p class="empty-state__text">Crie o primeiro caso com pré-condições e passos ordenados para começar a executar testes.</p>
+        <a class="button button--primary" href="{% url 'testcases:case_create' project.pk %}">Novo caso</a>
+      {% else %}
+        <p class="empty-state__text">Ainda não há casos cadastrados. Só testadores atribuídos ao projeto podem criá-los.</p>
+      {% endif %}
+    </div>
+  {% endif %}
+{% endblock %}

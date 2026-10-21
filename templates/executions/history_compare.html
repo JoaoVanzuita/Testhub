@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% load l10n %}
+{% load report_ui %}
+
+{% block title %}Comparação de execuções — {{ project.name }} — TestHub{% endblock %}
+
+{% block content %}
+  <nav class="breadcrumb" aria-label="Trilha">
+    <a href="{% url 'projects:project_list' %}">Projetos</a>
+    <span aria-hidden="true">/</span>
+    <a href="{% url 'projects:project_detail' project.pk %}">{{ project.name }}</a>
+    <span aria-hidden="true">/</span>
+    <a href="{% url 'executions:history_list' project.pk %}">Histórico</a>
+    <span aria-hidden="true">/</span>
+    <span>Comparação</span>
+  </nav>
+
+  <div class="page-header">
+    <h1>Comparação de execuções — {{ project.name }}</h1>
+  </div>
+
+  {% if completed_count == 0 %}
+    <section class="card" aria-labelledby="no-history-title">
+      <h2 id="no-history-title">Sem execuções concluídas</h2>
+      <p class="muted" role="status" data-history-empty>
+        Este projeto ainda não possui execuções concluídas. Conclua um ciclo para usar seu resultado
+        como linha de base.
+      </p>
+    </section>
+  {% elif baseline %}
+    {# FR-038 / US5/2: a single completed run is the initial reference. #}
+    <section class="card" aria-labelledby="baseline-title" data-history-baseline>
+      <h2 id="baseline-title">Execução de referência inicial</h2>
+      <p class="muted" role="status">
+        A execução <strong>#{{ baseline.execution.pk }}</strong> é a <strong>referência inicial</strong>
+        deste projeto: ainda <strong>não há outra execução concluída</strong> para comparar. Assim que
+        um novo ciclo for concluído, a comparação ficará disponível.
+      </p>
+
+      <dl class="detail-list">
+        <dt>Concluída em</dt>
+        <dd>{{ baseline.completed_at|date:"d/m/Y H:i" }}</dd>
+        <dt>Casos selecionados</dt>
+        <dd>{{ baseline.selected_cases }}</dd>
+        <dt>Casos aprovados</dt>
+        <dd>{{ baseline.approved_cases }}</dd>
+        <dt>Casos reprovados</dt>
+        <dd>{{ baseline.reproved_cases }}</dd>
+        <dt>Casos pendentes</dt>
+        <dd>{{ baseline.pending_cases }}</dd>
+        <dt>Casos não iniciados</dt>
+        <dd>{{ baseline.not_started_cases }}</dd>
+        <dt>Taxa de sucesso</dt>
+        <dd>{{ baseline.success_rate|unlocalize }}%</dd>
+      </dl>
+      <p>
+        <a class="button button--secondary" href="{% url 'executions:report_detail' baseline.execution.pk %}">Ver relatório</a>
+      </p>
+    </section>
+  {% else %}
+    {% if form %}
+      <form method="get" action="{% url 'executions:history_compare' project.pk %}" class="card" data-history-compare-form>
+        <fieldset>
+          <legend>Escolher execuções</legend>
+          <p class="muted">Escolha duas execuções concluídas do mesmo projeto para comparar.</p>
+          <p>
+            <label for="{{ form.base.id_for_label }}">{{ form.base.label }}</label>
+            {{ form.base }}
+          </p>
+          <p>
+            <label for="{{ form.against.id_for_label }}">{{ form.against.label }}</label>
+            {{ form.against }}
+          </p>
+        </fieldset>
+        <div class="form-actions">
+          <button type="submit" class="button button--primary">Comparar</button>
+        </div>
+      </form>
+    {% endif %}
+
+    {% if error %}
+      <ul class="errorlist" role="alert" data-history-error>
+        <li>{{ error }}</li>
+      </ul>
+    {% endif %}
+
+    {% if comparison %}
+      {# US5/1: metrics side by side plus the selected-case-set difference warning. #}
+      <section class="card" aria-labelledby="comparison-metrics-title">
+        <h2 id="comparison-metrics-title">Métricas comparadas</h2>
+        <p class="muted">
+          Métricas registradas e imutáveis de cada execução concluída.
+        </p>
+        <div class="table-wrap">
+          <table class="table" data-history-comparison>
+            <caption>Comparação #{{ comparison.base.execution.pk }} (referência) × #{{ comparison.against.execution.pk }}</caption>
+            <thead>
+              <tr>
+                <th scope="col">Métrica</th>
+                <th scope="col">#{{ comparison.base.execution.pk }} (referência)</th>
+                <th scope="col">#{{ comparison.against.execution.pk }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% comparison_metric_rows comparison as metric_rows %}
+              {% for row in metric_rows %}
+                <tr{% if row.differs %} class="compare-row--diff" data-differs="true"{% endif %}>
+                  <th scope="row">
+                    {{ row.label }}
+                    {% if row.differs %}<span class="diff-flag"><span aria-hidden="true">≠</span><span class="visually-hidden"> difere entre as execuções</span></span>{% endif %}
+                  </th>
+                  <td class="num">{{ row.base }}</td>
+                  <td class="num">{{ row.against }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <p class="muted">
+          O símbolo <span aria-hidden="true">≠</span> marca as métricas cujos valores registrados
+          diferem entre as duas execuções. Nenhuma linha é omitida.
+        </p>
+      </section>
+
+      <section class="card" aria-labelledby="case-set-title" data-case-set>
+        <h2 id="case-set-title">Conjunto de casos utilizados</h2>
+        {% if comparison.same_case_set %}
+          <p class="status status--ok" role="status" data-case-set-equal>
+            Os conjuntos de casos comparados são iguais ({{ comparison.common_count }} caso{{ comparison.common_count|pluralize }} em comum).
+          </p>
+        {% else %}
+          <p class="status status--warning" role="status" data-case-set-warning>
+            Atenção: os conjuntos de casos comparados são diferentes. A diferença de taxa pode refletir
+            casos distintos, e não apenas mudança de resultado.
+          </p>
+          <p class="muted">{{ comparison.common_count }} caso{{ comparison.common_count|pluralize }} em comum entre as duas execuções.</p>
+          {% if comparison.only_in_base %}
+            <h3>Somente na execução de referência (#{{ comparison.base.execution.pk }})</h3>
+            <ul data-case-set-only-base>
+              {% for difference in comparison.only_in_base %}
+                <li>{{ difference.title }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          {% if comparison.only_in_against %}
+            <h3>Somente na execução #{{ comparison.against.execution.pk }}</h3>
+            <ul data-case-set-only-against>
+              {% for difference in comparison.only_in_against %}
+                <li>{{ difference.title }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% endif %}
+      </section>
+
+      {# UC08/4: "frequência de defeitos" — resultados dos passos por execução. #}
+      <section class="card" aria-labelledby="comparison-defects-title" data-defect-frequency>
+        <h2 id="comparison-defects-title">Frequência de defeitos (resultados dos passos)</h2>
+        <p class="muted">
+          Contagem de passos por resultado registrado. Falhou/Bloqueado e observações de
+          falha/bloqueio indicam a incidência de defeitos em cada ciclo.
+        </p>
+        <div class="table-wrap">
+          <table class="table">
+            <caption>Resultados dos passos por execução</caption>
+            <thead>
+              <tr>
+                <th scope="col">Resultado</th>
+                <th scope="col">#{{ comparison.base.execution.pk }} (referência)</th>
+                <th scope="col">#{{ comparison.against.execution.pk }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% comparison_step_rows comparison as step_rows %}
+              {% for row in step_rows %}
+                <tr{% if row.differs %} class="compare-row--diff" data-differs="true"{% endif %}>
+                  <th scope="row">
+                    {{ row.label }}
+                    {% if row.differs %}<span class="diff-flag"><span aria-hidden="true">≠</span><span class="visually-hidden"> difere entre as execuções</span></span>{% endif %}
+                  </th>
+                  <td class="num">{{ row.base }}</td>
+                  <td class="num">{{ row.against }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <p class="muted">
+          O símbolo <span aria-hidden="true">≠</span> marca os resultados cujas contagens diferem
+          entre as duas execuções. Nenhuma linha é omitida.
+        </p>
+      </section>
+    {% endif %}
+  {% endif %}
+
+  <p>
+    <a class="button button--secondary" href="{% url 'executions:history_list' project.pk %}">Voltar ao histórico</a>
+  </p>
+{% endblock %}

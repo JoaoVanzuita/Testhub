@@ -1,0 +1,38 @@
+# Docker build context exclusions.
+# Keep local secrets, VCS history and planning artifacts out of the image.
+
+# Environment and secrets
+.env
+.env*
+
+# Version control and editor/tool metadata
+.git
+.gitignore
+.gitattributes
+.opencode
+.idea
+.vscode
+
+# Spec Kit, documentation and dev-tooling artifacts (not needed at runtime)
+.specify
+specs
+docs
+scripts
+
+# Python caches and virtual environments
+__pycache__
+*.py[cod]
+*.egg-info
+.venv
+venv
+env
+
+# Django collected output and local data
+staticfiles
+media
+*.log
+*.sqlite3
+
+# OS files
+.DS_Store
+Thumbs.db

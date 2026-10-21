@@ -1,0 +1,51 @@
+{% comment %}
+Focusable error summary (design system §5.2, "Focusable Error Summary").
+
+Renders once per form, at the top, only when there is something to fix. It
+collects every error the form knows about — field errors, ``non_field_errors``
+and, when a formset is passed, its ``non_form_errors`` and per-step field
+errors — and links each one to the control it belongs to.
+
+``app.js`` moves focus to ``#form-errors`` on load and focuses the linked
+control when a summary link is activated, so the summary is reachable and the
+focus lands on the offending field. The summary is the single assertive
+announcement for the page: the inline ``.field__error`` messages stay visible
+but are not separate live regions, which avoids announcing the same error
+several times to assistive technology.
+
+Context:
+  form      — required, the bound form.
+  formset   — optional, a bound inline formset (e.g. the ordered steps).
+
+Usage:  {% include "components/_form_errors.html" with form=form %}
+        {% include "components/_form_errors.html" with form=form formset=formset %}
+{% endcomment %}
+{% if form.errors or formset.non_form_errors or formset.errors %}
+  <div class="form-errors" id="form-errors" role="alert" tabindex="-1">
+    <p class="form-errors__title">Não foi possível salvar. Corrija os campos destacados:</p>
+    <ul class="form-errors__list">
+      {% for error in form.non_field_errors %}
+        <li>{{ error }}</li>
+      {% endfor %}
+      {% for field in form %}
+        {% if field.errors %}
+          <li>
+            <a href="#{{ field.auto_id }}">{% firstof field.label field.name %}</a>: {{ field.errors.0 }}
+          </li>
+        {% endif %}
+      {% endfor %}
+      {% for error in formset.non_form_errors %}
+        <li>{{ error }}</li>
+      {% endfor %}
+      {% for step_form in formset %}
+        {% for field in step_form %}
+          {% if field.errors %}
+            <li>
+              <a href="#{{ field.auto_id }}">Passo {{ forloop.parentloop.counter }} — {% firstof field.label field.name %}</a>: {{ field.errors.0 }}
+            </li>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}

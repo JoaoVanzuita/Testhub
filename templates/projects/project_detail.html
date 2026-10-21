@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} — TestHub{% endblock %}
+
+{% block content %}
+  <nav class="breadcrumb" aria-label="Trilha">
+    <a href="{% url 'projects:project_list' %}">Projetos</a>
+    <span aria-hidden="true">/</span>
+    <span>{{ project.name }}</span>
+  </nav>
+
+  <div class="page-header">
+    <h1>{{ project.name }}</h1>
+    {% if user.is_administrator %}
+      <a class="button button--secondary" href="{% url 'projects:project_edit' project.pk %}">Editar projeto</a>
+    {% endif %}
+  </div>
+
+  {# Plain anchor links, so the sections stay reachable without JavaScript. #}
+  <nav class="section-nav" aria-labelledby="section-nav-label">
+    <p class="section-nav__label" id="section-nav-label">Nesta página</p>
+    <ul>
+      <li><a href="#project-info">Informações do projeto</a></li>
+      <li><a href="#project-team">Equipe</a></li>
+      <li><a href="#project-cases">Casos de teste</a></li>
+      <li><a href="#project-executions">Execuções</a></li>
+      <li><a href="#project-history">Histórico e comparação</a></li>
+    </ul>
+  </nav>
+
+  <section class="card section-anchor" id="project-info" aria-labelledby="details-title">
+    <h2 id="details-title">Informações do projeto</h2>
+    <dl class="detail-list">
+      <dt>Descrição</dt>
+      <dd>{{ project.description|default:"—" }}</dd>
+      <dt>Situação</dt>
+      <dd>
+        {% if project.is_active %}
+          <span class="status status--ok">Ativo</span>
+        {% else %}
+          <span class="status status--off">Inativo</span>
+        {% endif %}
+      </dd>
+      <dt>Criado em</dt>
+      <dd>{{ project.created_at|date:"d/m/Y H:i" }}</dd>
+    </dl>
+  </section>
+
+  <section class="card section-anchor" id="project-team" aria-labelledby="team-title">
+    <h2 id="team-title">Equipe</h2>
+    {% if memberships %}
+      <div class="table-wrap">
+        {% comment %}
+        The section heading already names this table; the caption stays in the
+        markup for assistive technology and is hidden from view only.
+        {% endcomment %}
+        <table class="table">
+          <caption class="visually-hidden">Testadores atribuídos a este projeto</caption>
+          <thead>
+            <tr>
+              <th scope="col">Nome</th>
+              <th scope="col">E-mail</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for membership in memberships %}
+              <tr>
+                <td>{{ membership.user.name }}</td>
+                <td>{{ membership.user.email }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <svg class="empty-state__icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+          <path d="M10 3.4a3 3 0 1 1 0 6 3 3 0 0 1 0-6z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M4.6 16.4c.5-2.6 2.7-4.2 5.4-4.2s4.9 1.6 5.4 4.2"
+                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <h3 class="empty-state__title">Nenhum testador atribuído</h3>
+        <p class="empty-state__text">Atribua testadores para dar acesso aos casos de teste e às execuções deste projeto.</p>
+      </div>
+    {% endif %}
+    {% if user.is_administrator %}
+      <p><a class="button button--secondary" href="{% url 'projects:memberships' project.pk %}">Gerenciar equipe</a></p>
+    {% endif %}
+  </section>
+
+  <section class="card section-anchor" id="project-cases" aria-labelledby="cases-title">
+    <h2 id="cases-title">Casos de teste</h2>
+    <p class="muted">Defina casos com pré-condições e passos ordenados para repetir a execução manual e rastrear resultados.</p>
+    <p><a class="button button--secondary" href="{% url 'testcases:case_list' project.pk %}">Ver casos de teste</a></p>
+  </section>
+
+  <section class="card section-anchor" id="project-executions" aria-labelledby="executions-title">
+    <h2 id="executions-title">Execuções</h2>
+    <p class="muted">Cada execução preserva um snapshot dos casos e passos usados no ciclo.</p>
+    {% if executions %}
+      <div class="table-wrap">
+        <table class="table">
+          <caption class="visually-hidden">Execuções deste projeto</caption>
+          <thead>
+            <tr>
+              <th scope="col">Execução</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Iniciada em</th>
+              <th scope="col">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for execution in executions %}
+              <tr>
+                <td>#{{ execution.pk }} — {{ execution.created_by.name }}</td>
+                <td>
+                  {% if execution.is_completed %}
+                    <span class="status status--ok">Concluída</span>
+                  {% else %}
+                    <span class="status status--warning">Em andamento</span>
+                  {% endif %}
+                </td>
+                <td>{{ execution.started_at|date:"d/m/Y H:i" }}</td>
+                <td>
+                  <a href="{% url 'executions:execution_detail' execution.pk %}"
+                     aria-label="Abrir execução #{{ execution.pk }}">Abrir</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <svg class="empty-state__icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+          <path d="M6.6 4.4 15 10l-8.4 5.6z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+        <h3 class="empty-state__title">Nenhuma execução registrada</h3>
+        <p class="empty-state__text">Inicie uma execução para registrar os resultados dos casos deste projeto.</p>
+      </div>
+    {% endif %}
+    {% if user.is_tester %}
+      <p><a class="button button--primary" href="{% url 'executions:execution_create' project.pk %}">Nova execução</a></p>
+    {% endif %}
+  </section>
+
+  <section class="card section-anchor" id="project-history" aria-labelledby="history-title">
+    <h2 id="history-title">Histórico e comparação</h2>
+    <p class="muted">Comparações usam somente execuções concluídas deste projeto.</p>
+    <p><a class="button button--secondary" href="{% url 'executions:history_list' project.pk %}">Ver histórico e comparação</a></p>
+  </section>
+{% endblock %}

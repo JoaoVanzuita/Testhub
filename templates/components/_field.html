@@ -1,0 +1,54 @@
+{% comment %}
+Reusable form-field partial (design system §5.2).
+
+Renders one bound form field with its label, widget, help text and validation
+errors. Checkbox widgets render as a checkbox row (control + label side by
+side); every other widget renders stacked.
+
+Django (5.x) already marks the widget with ``aria-invalid="true"`` when the
+field has errors and points ``aria-describedby`` at the help and/or error
+element ids, following the ``<auto_id>_helptext`` / ``<auto_id>_error``
+convention. This partial renders those two ids so the references resolve.
+
+The error messages are not separate live regions: the shared
+``components/_form_errors.html`` summary is the single assertive announcement
+for the form (design system §5.2), which avoids repeating the same error to
+assistive technology.
+
+Usage:  {% include "components/_field.html" with field=form.name %}
+Optional: pass `field_label` to override the field's own label (e.g. login).
+
+Backward-compatible classes: `.helptext` / `.field-error` remain styled in
+app.css for parts of the UI that still use them.
+{% endcomment %}
+{% if field.use_fieldset %}
+  <div class="field field--choices">
+    <span class="field__label">{{ field.label }}{% if field.field.required %}<span class="field__req" aria-hidden="true">*</span>{% endif %}</span>
+    {{ field }}
+    {% if field.help_text %}
+      <div class="field__help" id="{{ field.auto_id }}_helptext">{{ field.help_text }}</div>
+    {% endif %}
+    {% for error in field.errors %}
+      <p class="field__error"{% if forloop.first %} id="{{ field.auto_id }}_error"{% endif %}>{{ error }}</p>
+    {% endfor %}
+  </div>
+{% elif field.field.widget.input_type == "checkbox" %}
+  <div class="field field--checkbox">
+    {{ field }}
+    <label for="{{ field.id_for_label }}">{% firstof field_label field.label %}</label>
+    {% for error in field.errors %}
+      <p class="field__error"{% if forloop.first %} id="{{ field.auto_id }}_error"{% endif %}>{{ error }}</p>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="field">
+    <label for="{{ field.id_for_label }}">{% firstof field_label field.label %}{% if field.field.required %}<span class="field__req" aria-hidden="true">*</span>{% endif %}</label>
+    {{ field }}
+    {% if field.help_text %}
+      <div class="field__help" id="{{ field.auto_id }}_helptext">{{ field.help_text }}</div>
+    {% endif %}
+    {% for error in field.errors %}
+      <p class="field__error"{% if forloop.first %} id="{{ field.auto_id }}_error"{% endif %}>{{ error }}</p>
+    {% endfor %}
+  </div>
+{% endif %}

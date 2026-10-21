@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if mode == "edit" %}Editar usuário{% else %}Novo usuário{% endif %} — TestHub
+{% endblock %}
+
+{% block content %}
+  <nav class="breadcrumb" aria-label="Trilha">
+    <a href="{% url 'accounts:user_list' %}">Usuários</a>
+    <span aria-hidden="true">/</span>
+    {% if mode == "edit" %}
+      <span>Editar usuário</span>
+    {% else %}
+      <span>Novo usuário</span>
+    {% endif %}
+  </nav>
+
+  <div class="page-header">
+    <div>
+      <h1>{% if mode == "edit" %}Editar usuário{% else %}Novo usuário{% endif %}</h1>
+      <p class="muted">
+        {% if mode == "edit" %}
+          Atualize nome, e-mail, perfil e situação da conta. O e-mail é o identificador de acesso.
+        {% else %}
+          Cadastre a conta definindo o e-mail de acesso, o perfil e a senha inicial.
+        {% endif %}
+      </p>
+    </div>
+  </div>
+
+  <form method="post" novalidate class="card">
+    {% csrf_token %}
+    {% include "components/_form_errors.html" with form=form %}
+
+    {% for field in form %}
+      {% if field.name == "email" %}
+        {% comment %}
+        UserEditForm derives its label from the model field ("Email"), while
+        UserCreateForm and the login screen show "E-mail". Unify the visible
+        label without touching the forms.
+        {% endcomment %}
+        {% include "components/_field.html" with field=field field_label="E-mail" %}
+      {% else %}
+        {% include "components/_field.html" with field=field %}
+      {% endif %}
+    {% endfor %}
+
+    {% if mode == "edit" and object.pk == user.pk %}
+      <p class="muted">Sua própria conta não pode ser inativada; peça a outro administrador se precisar remover o acesso.</p>
+    {% endif %}
+
+    <div class="form-actions">
+      <button type="submit" class="button button--primary">
+        {% if mode == "edit" %}Salvar alterações{% else %}Criar usuário{% endif %}
+      </button>
+      <a class="button button--secondary" href="{% url 'accounts:user_list' %}">Cancelar</a>
+    </div>
+  </form>
+{% endblock %}

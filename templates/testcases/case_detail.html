@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}{{ case.title }} — TestHub{% endblock %}
+
+{% block content %}
+  <nav class="breadcrumb" aria-label="Trilha">
+    <a href="{% url 'projects:project_list' %}">Projetos</a>
+    <span aria-hidden="true">/</span>
+    <a href="{% url 'projects:project_detail' project.pk %}">{{ project.name }}</a>
+    <span aria-hidden="true">/</span>
+    <a href="{% url 'testcases:case_list' project.pk %}">Casos de teste</a>
+    <span aria-hidden="true">/</span>
+    <span>{{ case.title }}</span>
+  </nav>
+
+  <div class="page-header">
+    <div>
+      <h1>{{ case.title }}</h1>
+      <p class="case-meta muted">
+        {% if case.is_active %}
+          <span class="status status--ok">Ativo</span>
+        {% else %}
+          <span class="status status--off">Inativo</span>
+        {% endif %}
+        <span>Atualizado em {{ case.updated_at|date:"d/m/Y H:i" }}</span>
+      </p>
+    </div>
+    {% if can_edit %}
+      <a class="button button--secondary" href="{% url 'testcases:case_edit' case.pk %}">Editar caso</a>
+    {% endif %}
+  </div>
+
+  <section class="card" aria-labelledby="details-title">
+    <h2 id="details-title">Informações do caso</h2>
+    <dl class="detail-list">
+      <dt>Projeto</dt>
+      <dd><a href="{% url 'projects:project_detail' project.pk %}">{{ project.name }}</a></dd>
+      <dt>Descrição</dt>
+      <dd>{{ case.description|default:"—" }}</dd>
+      <dt>Pré-condições</dt>
+      <dd>{{ case.preconditions|default:"—" }}</dd>
+    </dl>
+  </section>
+
+  <section class="case-steps" aria-labelledby="steps-title">
+    <div class="section-head">
+      <div>
+        <h2 id="steps-title">Passos ordenados</h2>
+        <p class="muted">Executados na ordem abaixo. A ordem é preservada nas execuções já registradas.</p>
+      </div>
+    </div>
+
+    {% if steps %}
+      <ol class="case-steps__list">
+        {% for step in steps %}
+          <li class="case-step{% if not step.is_active %} case-step--inactive{% endif %}">
+            <p class="case-step__head">
+              <span class="case-step__number" aria-hidden="true">{{ step.position }}</span>
+              <span class="case-step__action">{{ step.action }}</span>
+              {% if not step.is_active %}
+                <span class="status status--off">Inativo</span>
+              {% endif %}
+            </p>
+            <p class="case-step__expected">
+              <span class="case-step__label">Resultado esperado:</span>
+              {{ step.expected_result }}
+            </p>
+          </li>
+        {% endfor %}
+      </ol>
+    {% else %}
+      <p class="muted">Nenhum passo cadastrado.</p>
+    {% endif %}
+  </section>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Nova execução — {{ project.name }} — TestHub{% endblock %}
+
+{% block content %}
+  <nav class="breadcrumb" aria-label="Trilha">
+    <a href="{% url 'projects:project_list' %}">Projetos</a>
+    <span aria-hidden="true">/</span>
+    <a href="{% url 'projects:project_detail' project.pk %}">{{ project.name }}</a>
+    <span aria-hidden="true">/</span>
+    <span>Nova execução</span>
+  </nav>
+
+  <div class="page-header">
+    <div>
+      <h1>Nova execução</h1>
+      <p class="muted">
+        Monte um ciclo de teste a partir dos casos ativos do projeto
+        <a href="{% url 'projects:project_detail' project.pk %}">{{ project.name }}</a>.
+        Ao iniciar, você assume a condução e registra o resultado de cada passo.
+      </p>
+    </div>
+  </div>
+
+  <form method="post" novalidate class="execution-form">
+    {% csrf_token %}
+    {% include "components/_form_errors.html" with form=form %}
+
+    {% with eligible=form.cases.field.queryset %}
+      <div class="execution-form__grid">
+        <section class="card" aria-labelledby="cases-title">
+          <div class="section-head">
+            <div>
+              <h2 id="cases-title">
+                {{ form.cases.label }}<span class="field__req" aria-hidden="true">*</span>
+              </h2>
+              <p class="muted">
+                Escolha ao menos um caso. Só entram na lista casos ativos com pelo menos
+                um passo ativo; os casos e passos são copiados na ordem definida.
+              </p>
+            </div>
+            {% if eligible %}
+              <span class="badge badge--neutral">{{ eligible|length }} disponíveis</span>
+            {% endif %}
+          </div>
+
+          {% if eligible %}
+            <div class="case-picker{% if form.cases.errors %} case-picker--invalid{% endif %}"
+                 id="{{ form.cases.auto_id }}" tabindex="-1"
+                 role="group" aria-labelledby="cases-title"
+                 {% if form.cases.errors %}aria-invalid="true" aria-describedby="{{ form.cases.auto_id }}_error"{% endif %}>
+              {% for choice in form.cases %}
+                <label class="case-option" for="{{ choice.id_for_label }}">
+                  {{ choice.tag }}
+                  <span class="case-option__title">{{ choice.choice_label }}</span>
+                </label>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="empty-state">
+              <svg class="empty-state__icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                <path d="M5 3.5h7.2L16 7.3v9.2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-12a1 1 0 0 1 1-1z"
+                      fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                <path d="M7 9.6l1.4 1.4L11 8.4"
+                      fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M7 13.6h6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              <h3 class="empty-state__title">Nenhum caso elegível neste projeto</h3>
+              <p class="empty-state__text">
+                Uma execução precisa de pelo menos um caso ativo com passos ativos.
+                Cadastre ou ative um caso para poder iniciar.
+              </p>
+              <a class="button button--primary" href="{% url 'testcases:case_list' project.pk %}">Ver casos de teste</a>
+            </div>
+          {% endif %}
+
+          {% for error in form.cases.errors %}
+            <p class="field__error"{% if forloop.first %} id="{{ form.cases.auto_id }}_error"{% endif %}>{{ error }}</p>
+          {% endfor %}
+        </section>
+
+        <aside class="card execution-form__aside" aria-labelledby="run-summary-title">
+          <h2 id="run-summary-title">Resumo da execução</h2>
+          <dl class="detail-list">
+            <dt>Projeto</dt>
+            <dd><a href="{% url 'projects:project_detail' project.pk %}">{{ project.name }}</a></dd>
+            <dt>Responsável</dt>
+            <dd>{{ user.name }}</dd>
+          </dl>
+
+          <p class="snapshot-note">
+            Ao iniciar, o TestHub copia os casos e passos selecionados para um
+            <code>snapshot</code> imutável. Edições posteriores nos casos não alteram
+            esta execução.
+          </p>
+
+          <div class="form-actions execution-form__actions">
+            {% if eligible %}
+              <button type="submit" class="button button--primary">
+                <svg class="button__icon" width="16" height="16" viewBox="0 0 16 16"
+                     aria-hidden="true" focusable="false">
+                  <path d="M4.5 3.2 12.5 8l-8 4.8z" fill="currentColor"/>
+                </svg>
+                Iniciar execução
+              </button>
+            {% endif %}
+            <a class="button button--secondary" href="{% url 'projects:project_detail' project.pk %}">Cancelar</a>
+          </div>
+        </aside>
+      </div>
+    {% endwith %}
+  </form>
+{% endblock %}

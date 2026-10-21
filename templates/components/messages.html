@@ -1,0 +1,20 @@
+{% comment %}
+Flash messages.
+
+Each item is its own live region instead of nesting ``role="alert"`` items
+inside an ``aria-live`` container (C12): a single wrapper live region around
+several alerts would announce the whole list again each time an item is added.
+Errors and warnings announce assertively (``role="alert"``); success and info
+announce politely (``role="status"``). The list order and messages are unchanged.
+{% endcomment %}
+{% if messages %}
+  <ul class="messages">
+    {% for message in messages %}
+      {% if message.tags == 'error' or message.tags == 'danger' or message.tags == 'warning' %}
+        <li class="message message--{{ message.tags }}" role="alert">{{ message }}</li>
+      {% else %}
+        <li class="message message--{{ message.tags|default:'info' }}" role="status">{{ message }}</li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+{% endif %}

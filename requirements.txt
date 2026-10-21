@@ -1,0 +1,10 @@
+# TestHub runtime dependencies.
+# Runtime: Python 3.14.8 (pinned as the Dockerfile base image `python:3.14.8-slim`).
+# Pin exact versions (research.md: Django LTS + Psycopg 3 with the binary extra).
+# The AI provider adapter intentionally uses only the Python standard library
+# (urllib/json/ssl) until a provider is approved; do not add an HTTP client here.
+Django==5.2.18
+psycopg[binary]==3.3.6
+# Loads the local `.env` in `config/env.py` (development convenience only; the
+# Compose flow injects variables through `env_file`). See docs/capitulo-4-implementacao.md §4.3.1.
+python-dotenv==1.2.4

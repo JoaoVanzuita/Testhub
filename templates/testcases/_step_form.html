@@ -1,0 +1,78 @@
+{% comment %}
+One ordered-step row of the case formset (design-system "state rail").
+
+The formset contract consumed by `static/js/testcase_steps.js` stays intact:
+`data-step-row`, `data-step-index`, `data-step-move`, `data-step-remove`, the
+bound `id`, and the `position` / `is_active` / `DELETE` fields with their
+generated names and ids.
+
+The raw `DELETE` checkbox remains in the payload but is hidden: the single
+visible destructive control is "Remover passo", which the script checks it
+before submitting. The server keeps deciding between physical removal and
+logical inactivation.
+{% endcomment %}
+<fieldset class="card step-row" data-step-row>
+  <legend class="step-row__legend">
+    Passo <span class="step-row__sequence" data-step-index>{{ index|default:1 }}</span>
+  </legend>
+
+  {{ step_form.id }}
+
+  <div class="step-row__body">
+    {% for field in step_form.visible_fields %}
+      {% if field.name == "DELETE" %}
+        <div class="step-row__delete">
+          {% include "components/_field.html" with field=field %}
+        </div>
+      {% elif field.name == "position" %}
+        <div class="step-row__field step-row__field--order">
+          {% include "components/_field.html" with field=field %}
+        </div>
+      {% elif field.name == "action" %}
+        <div class="step-row__field step-row__field--action">
+          {% include "components/_field.html" with field=field %}
+        </div>
+      {% elif field.name == "expected_result" %}
+        <div class="step-row__field step-row__field--result">
+          {% include "components/_field.html" with field=field %}
+        </div>
+      {% elif field.name == "is_active" %}
+        <div class="step-row__field step-row__field--active">
+          {% include "components/_field.html" with field=field %}
+        </div>
+      {% else %}
+        {% include "components/_field.html" with field=field %}
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="step-row__actions">
+    <div class="step-row__moves">
+      <button type="button" class="button button--secondary button--sm" data-step-move="up">
+        <svg class="button__icon" width="16" height="16" viewBox="0 0 16 16"
+             aria-hidden="true" focusable="false">
+          <path d="M8 12.5V3.5M4.5 7 8 3.5 11.5 7" fill="none" stroke="currentColor"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Mover para cima
+      </button>
+      <button type="button" class="button button--secondary button--sm" data-step-move="down">
+        <svg class="button__icon" width="16" height="16" viewBox="0 0 16 16"
+             aria-hidden="true" focusable="false">
+          <path d="M8 3.5v9M4.5 9 8 12.5 11.5 9" fill="none" stroke="currentColor"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Mover para baixo
+      </button>
+    </div>
+    <button type="button" class="button button--danger-ghost button--sm" data-step-remove>
+      <svg class="button__icon" width="16" height="16" viewBox="0 0 16 16"
+           aria-hidden="true" focusable="false">
+        <path d="M3.5 4.5h9M6.5 4.5V3h3v1.5M5 4.5l.5 8h5l.5-8M7 7v3.5M9 7v3.5"
+              fill="none" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Remover passo
+    </button>
+  </div>
+</fieldset>

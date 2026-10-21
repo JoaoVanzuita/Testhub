@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Projetos — TestHub{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h1>Projetos</h1>
+      <p class="muted">Cada projeto reúne os casos de teste, as execuções e a equipe de testadores responsáveis.</p>
+    </div>
+    {% if user.is_administrator %}
+      <a class="button button--primary" href="{% url 'projects:project_create' %}">Novo projeto</a>
+    {% endif %}
+  </div>
+
+  {% if projects %}
+    <div class="table-wrap">
+      <table class="table">
+        <caption>Projetos disponíveis</caption>
+        <thead>
+          <tr>
+            <th scope="col">Nome</th>
+            <th scope="col">Descrição</th>
+            <th scope="col">Situação</th>
+            <th scope="col">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for project in projects %}
+            <tr>
+              <td><a href="{% url 'projects:project_detail' project.pk %}">{{ project.name }}</a></td>
+              <td>{{ project.description|default:"—" }}</td>
+              <td>
+                {% if project.is_active %}
+                  <span class="status status--ok">Ativo</span>
+                {% else %}
+                  <span class="status status--off">Inativo</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="row-actions">
+                  <a href="{% url 'projects:project_detail' project.pk %}"
+                     aria-label="Detalhes de {{ project.name }}">Detalhes</a>
+                  {% if user.is_administrator %}
+                    <a href="{% url 'projects:project_edit' project.pk %}"
+                       aria-label="Editar {{ project.name }}">Editar</a>
+                    <a href="{% url 'projects:memberships' project.pk %}"
+                       aria-label="Equipe de {{ project.name }}">Equipe</a>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <svg class="empty-state__icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+        <path d="M2.5 6a1 1 0 0 1 1-1h3.4l1.6 1.9h8a1 1 0 0 1 1 1v7.1a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1z"
+              fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>
+      <h2 class="empty-state__title">Nenhum projeto disponível</h2>
+      {% if user.is_administrator %}
+        <p class="empty-state__text">Crie o primeiro projeto para reunir casos de teste, execuções e a equipe de testadores.</p>
+        <a class="button button--primary" href="{% url 'projects:project_create' %}">Novo projeto</a>
+      {% else %}
+        <p class="empty-state__text">Você ainda não tem acesso a nenhum projeto. Peça a um administrador para atribuir você à equipe de um projeto.</p>
+      {% endif %}
+    </div>
+  {% endif %}
+{% endblock %}

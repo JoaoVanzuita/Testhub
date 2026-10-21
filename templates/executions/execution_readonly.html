@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% load execution_ui %}
+
+{% comment %}
+Completed execution — read-only ledger.
+
+This page reuses the runner's presentational components (`runner-summary`,
+`execution-case`, `execution-step`, `status`) so a finished run reads like the
+same instrument as the live runner, but it renders **no** result controls: there
+is no `execution_step_update` form, no Passou/Falhou/Bloqueado buttons and no
+observation textarea. Finished results are shown as labels only. Immutability is
+enforced by the domain services, never by hiding markup here.
+{% endcomment %}
+
+{% block title %}Execução #{{ execution.pk }} (concluída) — TestHub{% endblock %}
+
+{% block content %}
+  {% execution_summary execution_cases as summary %}
+
+  <nav class="breadcrumb" aria-label="Trilha">
+    <a href="{% url 'projects:project_list' %}">Projetos</a>
+    <span aria-hidden="true">/</span>
+    <a href="{% url 'projects:project_detail' execution.project.pk %}">{{ execution.project.name }}</a>
+    <span aria-hidden="true">/</span>
+    <span>Execução #{{ execution.pk }}</span>
+  </nav>
+
+  <div class="page-header">
+    <h1>Execução #{{ execution.pk }}</h1>
+    <span class="status status--ok">Concluída</span>
+  </div>
+
+  <p class="readonly-notice" role="note">
+    <strong>Execução concluída.</strong>
+    Os resultados, as observações e o histórico de responsáveis abaixo estão
+    registrados e são somente leitura — não é possível alterá-los.
+  </p>
+
+  {# ------------------------------------------------------------------ #}
+  {# Final state + progress — same instrument as the live runner (FR-022) #}
+  {# ------------------------------------------------------------------ #}
+  <section class="runner-summary" aria-labelledby="execution-summary-title">
+    <div class="runner-summary__context">
+      <h2 id="execution-summary-title">Resultado da execução</h2>
+      <dl class="detail-list">
+        <dt>Projeto</dt>
+        <dd>{{ execution.project.name }}</dd>
+        <dt>Iniciada por</dt>
+        <dd>{{ execution.created_by.name }}</dd>
+        <dt>Iniciada em</dt>
+        <dd>{{ execution.started_at|date:"d/m/Y H:i" }}</dd>
+        <dt>Concluída em</dt>
+        <dd>{{ execution.completed_at|date:"d/m/Y H:i" }}</dd>
+      </dl>
+    </div>
+
+    <div class="runner-summary__progress">
+      <div class="progress" role="img"
+           aria-label="{{ summary.assessed_steps }} de {{ summary.total_steps }} passos avaliados">
+        <span class="progress__bar" style="--value: {{ summary.percent }}%"></span>
+      </div>
+      <p class="runner-summary__label">{{ summary.assessed_steps }} de {{ summary.total_steps }} passos avaliados</p>
+
+      <ul class="runner-stats">
+        <li class="runner-stat">
+          <span class="runner-stat__value">{{ summary.total_cases }}</span>
+          <span class="runner-stat__label">casos</span>
+        </li>
+        <li class="runner-stat">
+          <span class="runner-stat__value">{{ summary.approved }}</span>
+          <span class="runner-stat__label">aprovados</span>
+        </li>
+        <li class="runner-stat">
+          <span class="runner-stat__value">{{ summary.reproved }}</span>
+          <span class="runner-stat__label">reprovados</span>
+        </li>
+        <li class="runner-stat">
+          <span class="runner-stat__value">{{ summary.pending }}</span>
+          <span class="runner-stat__label">pendentes</span>
+        </li>
+        <li class="runner-stat">
+          <span class="runner-stat__value">{{ summary.not_started }}</span>
+          <span class="runner-stat__label">não iniciados</span>
+        </li>
+      </ul>
+      <p class="muted">Estado final congelado na conclusão. Passos sem avaliação permanecem como pendentes.</p>
+    </div>
+  </section>
+
+  {# ------------------------------------------------------------------ #}
+  {# Report, history and project — existing destinations, clearly offered #}
+  {# ------------------------------------------------------------------ #}
+  <section class="card" aria-labelledby="execution-report-title">
+    <h2 id="execution-report-title">Relatório e histórico</h2>
+    {% if report %}
+      <p class="muted" data-ai-status-notice>
+        Análise complementar (IA):
+        <span class="status{% if report.is_ai_processing %} status--warning{% elif report.has_analysis %} status--ok{% else %} status--off{% endif %}" data-ai-status>{{ report.ai_status_label }}</span>
+        {% if report.is_ai_processing %}— as métricas estatísticas já estão disponíveis.{% elif not report.has_analysis %}— as métricas estatísticas permanecem disponíveis e consultáveis.{% endif %}
+      </p>
+    {% endif %}
+    <div class="form-actions">
+      <a class="button button--primary" href="{% url 'executions:report_detail' execution.pk %}">Ver relatório estatístico</a>
+      <a class="button button--secondary" href="{% url 'executions:history_list' execution.project.pk %}">Ver histórico do projeto</a>
+      <a class="button button--secondary" href="{% url 'projects:project_detail' execution.project.pk %}">Voltar ao projeto</a>
+    </div>
+  </section>
+
+  {# ------------------------------------------------------------------ #}
+  {# Historical responsibility — preserved, never editable (FR-021/025)  #}
+  {# ------------------------------------------------------------------ #}
+  <section aria-labelledby="execution-history-title">
+    <h2 id="execution-history-title">Responsáveis</h2>
+    <div class="table-wrap">
+      <table class="table">
+        <caption>Histórico de responsáveis pela condução</caption>
+        <thead>
+          <tr>
+            <th scope="col">Responsável</th>
+            <th scope="col">Atribuído em</th>
+            <th scope="col">Liberado em</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for assignment in execution.assignments.all %}
+            <tr>
+              <td>{{ assignment.responsible.name }}</td>
+              <td>{{ assignment.assigned_at|date:"d/m/Y H:i" }}</td>
+              <td>{{ assignment.released_at|date:"d/m/Y H:i"|default:"—" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {% include "executions/_case_board.html" %}
+
+  {# ------------------------------------------------------------------ #}
+  {# Frozen results, grouped by case and step, in snapshot order          #}
+  {# ------------------------------------------------------------------ #}
+  {% for execution_case in execution_cases %}
+    <section class="execution-case" data-execution-case data-status="{{ execution_case.status }}" aria-labelledby="execution-case-{{ execution_case.pk }}-title">
+      <header class="execution-case__head">
+        <h2 id="execution-case-{{ execution_case.pk }}-title">
+          {{ execution_case.title }}
+        </h2>
+        <span class="status {{ execution_case.status|case_status_class }}" data-case-status>{{ execution_case.get_status_display }}</span>
+      </header>
+      {% if execution_case.total_steps %}
+        <p class="execution-progress">
+          <progress max="{{ execution_case.total_steps }}" value="{{ execution_case.assessed_steps }}">{{ execution_case.progress_label }}</progress>
+          <span>{{ execution_case.progress_label }}</span>
+        </p>
+      {% endif %}
+      {% if execution_case.description %}
+        <p class="muted">{{ execution_case.description }}</p>
+      {% endif %}
+      {% if execution_case.preconditions %}
+        <p class="muted">Pré-condições: {{ execution_case.preconditions }}</p>
+      {% endif %}
+
+      <ol class="execution-steps">
+        {% for step in execution_case.steps.all %}
+          <li class="execution-step" data-outcome="{{ step.outcome|default:'' }}">
+            <p class="execution-step__action">
+              <span class="execution-step__position">{{ step.snapshot_position }}.</span>
+              <strong>{{ step.action }}</strong>
+            </p>
+            <p class="muted">Esperado: {{ step.expected_result }}</p>
+            <p>
+              Resultado:
+              <span class="status {{ step.outcome|outcome_status_class }}" data-step-outcome data-outcome="{{ step.outcome|default:'' }}">{{ step.get_outcome_display|default:"Não avaliado" }}</span>
+            </p>
+            {% if step.observation %}
+              <p class="execution-step__observation">
+                <span class="execution-step__observation-label">Observação:</span> {{ step.observation }}
+              </p>
+            {% endif %}
+          </li>
+        {% empty %}
+          <li class="muted">Este caso não possui passos registrados.</li>
+        {% endfor %}
+      </ol>
+    </section>
+  {% empty %}
+    <p class="muted">Nenhum caso selecionado nesta execução.</p>
+  {% endfor %}
+{% endblock %}

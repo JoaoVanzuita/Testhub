@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load l10n %}
+
+{% block title %}Histórico de execuções — {{ project.name }} — TestHub{% endblock %}
+
+{% block content %}
+  <nav class="breadcrumb" aria-label="Trilha">
+    <a href="{% url 'projects:project_list' %}">Projetos</a>
+    <span aria-hidden="true">/</span>
+    <a href="{% url 'projects:project_detail' project.pk %}">{{ project.name }}</a>
+    <span aria-hidden="true">/</span>
+    <span>Histórico</span>
+  </nav>
+
+  <div class="page-header">
+    <h1>Histórico de execuções — {{ project.name }}</h1>
+  </div>
+
+  <section class="card" aria-labelledby="history-list-title">
+    <h2 id="history-list-title">Execuções concluídas</h2>
+    <p class="muted">
+      Somente execuções concluídas são comparadas. As métricas abaixo já estão consolidadas e não
+      mudam com a análise de IA.
+    </p>
+
+    {% if completed_count == 0 %}
+      <p class="muted" role="status" data-history-empty>
+        Este projeto ainda não possui execuções concluídas para comparar.
+      </p>
+    {% else %}
+      {% if has_baseline %}
+        <p class="status status--warning" role="status" data-history-baseline>
+          Esta é a <strong>referência inicial</strong>: ainda <strong>não há outra execução concluída</strong>
+          neste projeto para comparar. O histórico mostrado abaixo serve como linha de base para as
+          próximas execuções.
+        </p>
+      {% endif %}
+
+      {% if completed_count >= 2 and comparison_form %}
+        <form method="get" action="{% url 'executions:history_compare' project.pk %}" class="card" data-history-compare-form>
+          <fieldset>
+            <legend>Comparar execuções concluídas</legend>
+            <p class="muted">Escolha duas execuções do mesmo projeto para comparar métricas e conjuntos de casos.</p>
+            <p>
+              <label for="{{ comparison_form.base.id_for_label }}">{{ comparison_form.base.label }}</label>
+              {{ comparison_form.base }}
+            </p>
+            <p>
+              <label for="{{ comparison_form.against.id_for_label }}">{{ comparison_form.against.label }}</label>
+              {{ comparison_form.against }}
+            </p>
+          </fieldset>
+          <div class="form-actions">
+            <button type="submit" class="button button--primary">Comparar</button>
+          </div>
+        </form>
+      {% endif %}
+
+      <div class="table-wrap">
+        <table class="table">
+          <caption>Execuções concluídas deste projeto</caption>
+          <thead>
+            <tr>
+              <th scope="col">Execução</th>
+              <th scope="col">Concluída em</th>
+              <th scope="col">Casos</th>
+              <th scope="col">Selecionados</th>
+              <th scope="col">Aprovados</th>
+              <th scope="col">Reprovados</th>
+              <th scope="col">Pendentes</th>
+              <th scope="col">Não iniciados</th>
+              <th scope="col">Taxa de sucesso</th>
+              <th scope="col">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for summary in summaries %}
+              <tr data-history-run="{{ summary.execution.pk }}">
+                <td>#{{ summary.execution.pk }} — {{ summary.execution.created_by.name }}</td>
+                <td>{{ summary.completed_at|date:"d/m/Y H:i" }}</td>
+                <td>{{ summary.case_titles.values|join:", " }}</td>
+                <td class="num">{{ summary.selected_cases }}</td>
+                <td class="num">{{ summary.approved_cases }}</td>
+                <td class="num">{{ summary.reproved_cases }}</td>
+                <td class="num">{{ summary.pending_cases }}</td>
+                <td class="num">{{ summary.not_started_cases }}</td>
+                <td class="num">{{ summary.success_rate|unlocalize }}%</td>
+                <td>
+                  <a href="{% url 'executions:execution_detail' summary.execution.pk %}">Abrir</a>
+                  <a href="{% url 'executions:report_detail' summary.execution.pk %}">Relatório</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+
+    <p><a class="button button--secondary" href="{% url 'projects:project_detail' project.pk %}">Voltar ao projeto</a></p>
+  </section>
+{% endblock %}

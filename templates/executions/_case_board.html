@@ -1,0 +1,62 @@
+{% load execution_ui %}
+
+{% comment %}
+Read-only monitoring board: one column per derived CaseStatus. No new state is
+introduced — a case with a blocked step stays in "Pendente" and only carries a
+secondary, step-level hint. Nothing here writes data or exposes operation
+controls; "Abrir" only links to the existing execution detail.
+{% endcomment %}
+<section class="board-section" aria-labelledby="case-board-title">
+  <div class="board-section__head">
+    <h2 id="case-board-title">Quadro da execução</h2>
+    <p class="muted">
+      Visão somente leitura dos casos desta execução pela situação derivada.
+      Casos com passo bloqueado permanecem em <strong>Pendente</strong>.
+    </p>
+  </div>
+
+  {% if execution_cases %}
+    {% case_board_columns execution_cases as columns %}
+    <div class="board" data-case-board>
+      {% for column in columns %}
+        <section class="board__col" data-board-column="{{ column.key }}"
+                 aria-labelledby="board-col-{{ column.key }}">
+          <header class="board__head">
+            <h3 class="board__title" id="board-col-{{ column.key }}">
+              {{ column.label }}
+              <span class="board__count" data-board-count>{{ column.count }}</span>
+            </h3>
+          </header>
+          <ul class="board__list" data-board-list>
+            {% for execution_case in column.cases %}
+              {% case_has_blocked execution_case as has_blocked %}
+              <li class="board__card" data-board-card="{{ execution_case.pk }}"
+                  data-status="{{ column.key }}">
+                <p class="board__card-id">Caso #{{ execution_case.source_test_case_id }}</p>
+                <p class="board__card-title">{{ execution_case.title }}</p>
+                <p class="board__card-status">
+                  <span class="status {{ column.status_class }}" data-board-card-status>{{ execution_case.get_status_display }}</span>
+                </p>
+                {% if execution_case.total_steps %}
+                  <p class="board__card-meta muted" data-board-card-meta>{{ execution_case.progress_label }}</p>
+                {% endif %}
+                <p class="board__card-flag" data-board-card-flag{% if not has_blocked %} hidden{% endif %}>
+                  <span class="badge badge--warning">Passo bloqueado</span>
+                </p>
+                <p class="board__card-actions">
+                  <a class="button button--secondary button--sm"
+                     href="{% url 'executions:execution_detail' execution.pk %}#execution-case-{{ execution_case.pk }}-title">Abrir</a>
+                </p>
+              </li>
+            {% endfor %}
+            <li class="board__empty muted" data-board-empty{% if column.count %} hidden{% endif %}>
+              Nenhum caso nesta coluna.
+            </li>
+          </ul>
+        </section>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="muted" role="status">Nenhum caso selecionado nesta execução.</p>
+  {% endif %}
+</section>
