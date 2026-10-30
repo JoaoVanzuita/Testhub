@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}{{ case.title }} — TestHub{% endblock %}
 
@@ -48,23 +49,34 @@
         <h2 id="steps-title">Passos ordenados</h2>
         <p class="muted">Executados na ordem abaixo. A ordem é preservada nas execuções já registradas.</p>
       </div>
+      {% if steps %}
+        <button type="button" class="button button--secondary button--sm"
+                data-case-steps-toggle hidden
+                aria-controls="case-steps-list" aria-expanded="false">
+          Expandir todos
+        </button>
+      {% endif %}
     </div>
 
     {% if steps %}
-      <ol class="case-steps__list">
+      <ol class="case-steps__list" id="case-steps-list" data-case-steps>
         {% for step in steps %}
           <li class="case-step{% if not step.is_active %} case-step--inactive{% endif %}">
-            <p class="case-step__head">
-              <span class="case-step__number" aria-hidden="true">{{ step.position }}</span>
-              <span class="case-step__action">{{ step.action }}</span>
-              {% if not step.is_active %}
-                <span class="status status--off">Inativo</span>
-              {% endif %}
-            </p>
-            <p class="case-step__expected">
-              <span class="case-step__label">Resultado esperado:</span>
-              {{ step.expected_result }}
-            </p>
+            <details class="case-step__details" data-case-step>
+              <summary class="case-step__summary">
+                <span class="case-step__number" aria-hidden="true">{{ step.position }}</span>
+                <span class="case-step__action">{{ step.action }}</span>
+                {% if not step.is_active %}
+                  <span class="status status--off">Inativo</span>
+                {% endif %}
+              </summary>
+              <div class="case-step__body">
+                <p class="case-step__expected">
+                  <span class="case-step__label">Resultado esperado:</span>
+                  {{ step.expected_result }}
+                </p>
+              </div>
+            </details>
           </li>
         {% endfor %}
       </ol>
@@ -72,4 +84,8 @@
       <p class="muted">Nenhum passo cadastrado.</p>
     {% endif %}
   </section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/case_steps_collapse.js' %}" defer></script>
 {% endblock %}

@@ -1,0 +1,58 @@
+{% load execution_ui %}
+{% comment %}
+One execution case in the completed (read-only) ledger. Rendered inside a native
+<dialog> so the board card opens it as a modal, mirroring the live runner — but
+with no result controls: outcomes and observations are shown as labels only.
+Immutability is enforced by the domain services, never by hiding markup here.
+{% endcomment %}
+<section class="execution-case" data-execution-case data-pk="{{ execution_case.pk }}" data-status="{{ execution_case.status }}">
+  <header class="execution-case__head">
+    <h2 id="case-modal-{{ execution_case.pk }}-title">{{ execution_case.title }}</h2>
+    <div class="execution-case__head-actions">
+      <span class="status {{ execution_case.status|case_status_class }}" data-case-status>{{ execution_case.get_status_display }}</span>
+      <button type="button" class="case-modal__close" data-case-modal-close aria-label="Fechar caso">
+        <svg class="icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  {% if execution_case.total_steps %}
+    <p class="execution-progress">
+      <progress max="{{ execution_case.total_steps }}" value="{{ execution_case.assessed_steps }}">{{ execution_case.progress_label }}</progress>
+      <span>{{ execution_case.progress_label }}</span>
+    </p>
+  {% endif %}
+
+  {% if execution_case.description %}
+    <p class="muted">{{ execution_case.description }}</p>
+  {% endif %}
+
+  {% if execution_case.preconditions %}
+    <p class="muted">Pré-condições: {{ execution_case.preconditions }}</p>
+  {% endif %}
+
+  <ol class="execution-steps">
+    {% for step in execution_case.steps.all %}
+      <li class="execution-step" data-outcome="{{ step.outcome|default:'' }}">
+        <p class="execution-step__action">
+          <span class="execution-step__position">{{ step.snapshot_position }}.</span>
+          <strong>{{ step.action }}</strong>
+        </p>
+        <p class="muted">Esperado: {{ step.expected_result }}</p>
+        <p>
+          Resultado:
+          <span class="status {{ step.outcome|outcome_status_class }}" data-step-outcome data-outcome="{{ step.outcome|default:'' }}">{{ step.get_outcome_display|default:"Não avaliado" }}</span>
+        </p>
+        {% if step.observation %}
+          <p class="execution-step__observation">
+            <span class="execution-step__observation-label">Observação:</span> {{ step.observation }}
+          </p>
+        {% endif %}
+      </li>
+    {% empty %}
+      <li class="muted">Este caso não possui passos registrados.</li>
+    {% endfor %}
+  </ol>
+</section>

@@ -92,25 +92,19 @@ class CaseBoardTests(TestCase):
         self.assertEqual(counts[CaseStatus.APPROVED.value], 3)
         self.assertEqual(counts[CaseStatus.REPROVED.value], 3)
 
-    def test_board_renders_every_case_with_an_open_link(self):
+    def test_board_renders_every_case_with_an_open_control(self):
         html = self._detail()
-        detail_url = reverse(
-            "executions:execution_detail", args=[self.execution.pk]
-        )
 
         self.assertIn("data-case-board", html)
         self.assertEqual(html.count("data-board-card="), 12)
-        self.assertNotIn("Read-only monitoring board", html)
+        self.assertIn('aria-haspopup="dialog"', html)
 
         for label in ["Não iniciado", "Pendente", "Aprovado", "Reprovado"]:
             self.assertIn(label, html)
 
         for execution_case in self.execution.execution_cases.all():
             self.assertIn(f'data-board-card="{execution_case.pk}"', html)
-            self.assertIn(
-                f'href="{detail_url}#execution-case-{execution_case.pk}-title"',
-                html,
-            )
+            self.assertIn(f'data-case-open="{execution_case.pk}"', html)
 
     def test_blocked_step_stays_pending_with_a_secondary_hint(self):
         html = self._detail()

@@ -55,11 +55,16 @@
           <h2 id="steps-title">Passos ordenados</h2>
           <p class="muted">O caso precisa de ao menos um passo ativo com ação e resultado esperado. A ordem definida aqui é preservada no histórico de execuções.</p>
         </div>
+        <button type="button" class="button button--secondary button--sm"
+                data-steps-collapse-toggle
+                aria-controls="step-list" aria-expanded="true">
+          Recolher todos
+        </button>
       </div>
 
       {{ formset.management_form }}
 
-      <div class="step-list" data-steps-container>
+      <div class="step-list" id="step-list" data-steps-container>
         {% for step_form in formset %}
           {% include "testcases/_step_form.html" with step_form=step_form index=forloop.counter %}
         {% endfor %}

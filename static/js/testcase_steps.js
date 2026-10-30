@@ -189,6 +189,7 @@
     }
     total.value = String(index + 1);
     refresh(container);
+    updatePreview(row);
     setStatus(
       formset,
       "Passo adicionado na posição " +
@@ -240,10 +241,72 @@
     }
   }
 
+  // Mirror the action textarea into the collapsed-step preview. The preview is
+  // `aria-hidden`, so it never duplicates the labelled field for AT.
+  function updatePreview(row) {
+    if (!row) {
+      return;
+    }
+    var preview = row.querySelector("[data-step-preview]");
+    var action = row.querySelector('textarea[name$="-action"]');
+    if (preview && action) {
+      var text = String(action.value).trim();
+      preview.textContent = text || "Sem ação";
+    }
+  }
+
   document.querySelectorAll("[data-steps-formset]").forEach(function (formset) {
     var container = formset.querySelector("[data-steps-container]");
     if (!container) {
       return;
+    }
+
+    var globalToggle = formset.querySelector("[data-steps-collapse-toggle]");
+
+    // --- Collapse / expand (JS-enhanced) --------------------------------
+    function setCollapsed(row, collapsed) {
+      row.classList.toggle("is-collapsed", collapsed);
+      var toggle = row.querySelector("[data-step-toggle]");
+      if (toggle) {
+        toggle.setAttribute("aria-expanded", String(!collapsed));
+        toggle.textContent = collapsed ? "Expandir" : "Recolher";
+      }
+    }
+
+    function allExpanded() {
+      return activeRows(container).every(function (row) {
+        return !row.classList.contains("is-collapsed");
+      });
+    }
+
+    function syncGlobalToggle() {
+      if (!globalToggle) {
+        return;
+      }
+      var expanded = allExpanded();
+      globalToggle.setAttribute("aria-expanded", String(expanded));
+      globalToggle.textContent = expanded ? "Recolher todos" : "Expandir todos";
+    }
+
+    function collapseAll(collapsed) {
+      activeRows(container).forEach(function (row) {
+        setCollapsed(row, collapsed);
+      });
+      syncGlobalToggle();
+    }
+
+    function initCollapse() {
+      stepRows(container).forEach(function (row) {
+        updatePreview(row);
+      });
+      // Default state: every step starts collapsed. When the server re-renders
+      // after a failed submit, an error summary is present and the rows stay
+      // expanded so the offending fields remain visible.
+      var collapsedByDefault = !formset.querySelector("#form-errors");
+      activeRows(container).forEach(function (row) {
+        setCollapsed(row, collapsedByDefault);
+      });
+      syncGlobalToggle();
     }
 
     formset.addEventListener("click", function (event) {
@@ -252,19 +315,29 @@
         return;
       }
       var action = target.closest(
-        "[data-step-move], [data-step-remove], [data-step-add]"
+        "[data-step-move], [data-step-remove], [data-step-add], [data-step-toggle], [data-steps-collapse-toggle]"
       );
       if (!action) {
         return;
       }
       var row = action.closest("[data-step-row]");
 
-      if (action.hasAttribute("data-step-add")) {
+      if (action.hasAttribute("data-steps-collapse-toggle")) {
+        event.preventDefault();
+        // Collapse all when everything is expanded, otherwise expand all.
+        collapseAll(allExpanded());
+      } else if (action.hasAttribute("data-step-toggle")) {
+        event.preventDefault();
+        setCollapsed(row, !row.classList.contains("is-collapsed"));
+        syncGlobalToggle();
+      } else if (action.hasAttribute("data-step-add")) {
         event.preventDefault();
         addRow(formset, container);
+        syncGlobalToggle();
       } else if (action.hasAttribute("data-step-remove")) {
         event.preventDefault();
         removeRow(row, formset, container);
+        syncGlobalToggle();
       } else if (action.hasAttribute("data-step-move")) {
         event.preventDefault();
         moveRow(
@@ -274,6 +347,18 @@
           container,
           action
         );
+      }
+    });
+
+    // Keep the collapsed-step preview in sync with the action textarea.
+    formset.addEventListener("input", function (event) {
+      var target = event.target;
+      if (
+        target &&
+        typeof target.matches === "function" &&
+        target.matches('textarea[name$="-action"]')
+      ) {
+        updatePreview(target.closest("[data-step-row]"));
       }
     });
 
@@ -292,5 +377,6 @@
     });
 
     refresh(container);
+    initCollapse();
   });
 })();

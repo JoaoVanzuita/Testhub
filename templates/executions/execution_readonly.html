@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load execution_ui %}
+{% load static %}
 
 {% comment %}
 Completed execution — read-only ledger.
@@ -137,53 +138,19 @@ enforced by the domain services, never by hiding markup here.
   {% include "executions/_case_board.html" %}
 
   {# ------------------------------------------------------------------ #}
-  {# Frozen results, grouped by case and step, in snapshot order          #}
+  {# Frozen results, grouped by case and step, in snapshot order.        #}
+  {# Each case is a closed <dialog> opened from the board card.          #}
   {# ------------------------------------------------------------------ #}
   {% for execution_case in execution_cases %}
-    <section class="execution-case" data-execution-case data-status="{{ execution_case.status }}" aria-labelledby="execution-case-{{ execution_case.pk }}-title">
-      <header class="execution-case__head">
-        <h2 id="execution-case-{{ execution_case.pk }}-title">
-          {{ execution_case.title }}
-        </h2>
-        <span class="status {{ execution_case.status|case_status_class }}" data-case-status>{{ execution_case.get_status_display }}</span>
-      </header>
-      {% if execution_case.total_steps %}
-        <p class="execution-progress">
-          <progress max="{{ execution_case.total_steps }}" value="{{ execution_case.assessed_steps }}">{{ execution_case.progress_label }}</progress>
-          <span>{{ execution_case.progress_label }}</span>
-        </p>
-      {% endif %}
-      {% if execution_case.description %}
-        <p class="muted">{{ execution_case.description }}</p>
-      {% endif %}
-      {% if execution_case.preconditions %}
-        <p class="muted">Pré-condições: {{ execution_case.preconditions }}</p>
-      {% endif %}
-
-      <ol class="execution-steps">
-        {% for step in execution_case.steps.all %}
-          <li class="execution-step" data-outcome="{{ step.outcome|default:'' }}">
-            <p class="execution-step__action">
-              <span class="execution-step__position">{{ step.snapshot_position }}.</span>
-              <strong>{{ step.action }}</strong>
-            </p>
-            <p class="muted">Esperado: {{ step.expected_result }}</p>
-            <p>
-              Resultado:
-              <span class="status {{ step.outcome|outcome_status_class }}" data-step-outcome data-outcome="{{ step.outcome|default:'' }}">{{ step.get_outcome_display|default:"Não avaliado" }}</span>
-            </p>
-            {% if step.observation %}
-              <p class="execution-step__observation">
-                <span class="execution-step__observation-label">Observação:</span> {{ step.observation }}
-              </p>
-            {% endif %}
-          </li>
-        {% empty %}
-          <li class="muted">Este caso não possui passos registrados.</li>
-        {% endfor %}
-      </ol>
-    </section>
+    <dialog class="case-modal" data-case-modal data-pk="{{ execution_case.pk }}"
+            aria-labelledby="case-modal-{{ execution_case.pk }}-title">
+      {% include "executions/_execution_case_readonly.html" with execution_case=execution_case %}
+    </dialog>
   {% empty %}
     <p class="muted">Nenhum caso selecionado nesta execução.</p>
   {% endfor %}
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/case_modals.js' %}" defer></script>
 {% endblock %}

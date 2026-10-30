@@ -1,0 +1,101 @@
+{% load execution_ui %}
+{% comment %}
+One execution case in the live runner. It is rendered inside a native <dialog>
+(`templates/executions/execution_detail.html`), so the whole case — status,
+progress, preconditions and the ordered step-result forms — lives in a single
+place and the board card can open it as a modal without duplicating markup or
+moving DOM around.
+
+The step-form contract consumed by `static/js/execution_results.js` stays
+intact: `data-execution-case`, `data-step-row`, `data-step-result-form`,
+`data-step-outcome`, `data-case-status`, `data-case-progress` and the outcome
+buttons keep their names and values. The server remains the source of truth.
+{% endcomment %}
+<section class="execution-case" data-execution-case data-pk="{{ execution_case.pk }}" data-status="{{ execution_case.status }}">
+  <header class="execution-case__head">
+    <h2 id="case-modal-{{ execution_case.pk }}-title">{{ execution_case.title }}</h2>
+    <div class="execution-case__head-actions">
+      <span class="status {{ execution_case.status|case_status_class }}" data-case-status>{{ execution_case.get_status_display }}</span>
+      <button type="button" class="case-modal__close" data-case-modal-close aria-label="Fechar caso">
+        <svg class="icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  {% if execution_case.total_steps %}
+    <p class="execution-progress">
+      <progress data-case-progress max="{{ execution_case.total_steps }}" value="{{ execution_case.assessed_steps }}">{{ execution_case.progress_label }}</progress>
+      <span data-case-progress-label>{{ execution_case.progress_label }}</span>
+    </p>
+  {% endif %}
+
+  {% if execution_case.description %}
+    <p class="muted">{{ execution_case.description }}</p>
+  {% endif %}
+
+  {% if execution_case.preconditions %}
+    <p class="muted">Pré-condições: {{ execution_case.preconditions }}</p>
+  {% endif %}
+
+  <ol class="execution-steps">
+    {% for step in execution_case.steps.all %}
+      <li class="execution-step{% if step.pk == summary.next_pending_pk %} execution-step--next{% endif %}"
+          data-step-row
+          data-outcome="{{ step.outcome|default:'' }}"
+          {% if step.pk == summary.next_pending_pk %}data-next-pending{% endif %}>
+        <p class="execution-step__action">
+          <span class="execution-step__position">{{ step.snapshot_position }}.</span>
+          <strong>{{ step.action }}</strong>
+          {% if step.pk == summary.next_pending_pk %}
+            <span class="badge badge--warning" data-next-pending-badge>Próximo passo pendente</span>
+          {% endif %}
+        </p>
+        <p class="muted">Esperado: {{ step.expected_result }}</p>
+        <p>
+          Resultado:
+          <span class="status {{ step.outcome|outcome_status_class }}" data-step-outcome data-outcome="{{ step.outcome|default:'' }}">{{ step.get_outcome_display|default:"Não avaliado" }}</span>
+        </p>
+
+        {% if can_operate %}
+          <form method="post" action="{% url 'executions:execution_step_update' execution.pk step.pk %}" class="step-result" data-step-result-form>
+            {% csrf_token %}
+            <fieldset class="step-outcome">
+              <legend class="visually-hidden">Resultado do passo {{ step.snapshot_position }}</legend>
+              <div class="step-outcome__actions">
+                <button type="submit" name="outcome" value="PASSED"
+                        class="step-action step-action--passed{% if step.outcome == 'PASSED' %} is-active{% endif %}"
+                        data-step-action="PASSED">Passou</button>
+                <button type="submit" name="outcome" value="FAILED"
+                        class="step-action step-action--failed{% if step.outcome == 'FAILED' %} is-active{% endif %}"
+                        data-step-action="FAILED">Falhou</button>
+                <button type="submit" name="outcome" value="BLOCKED"
+                        class="step-action step-action--blocked{% if step.outcome == 'BLOCKED' %} is-active{% endif %}"
+                        data-step-action="BLOCKED">Bloqueado</button>
+              </div>
+            </fieldset>
+            <div class="field step-result__observation">
+              <label for="observation-{{ step.pk }}">Observação</label>
+              <textarea id="observation-{{ step.pk }}" name="observation" rows="2"
+                        aria-describedby="observation-help-{{ step.pk }}">{{ step.observation }}</textarea>
+              <p class="helptext" id="observation-help-{{ step.pk }}">Opcional. Descreva evidências, sobretudo em passos com Falhou ou Bloqueado.</p>
+            </div>
+            <div class="step-result__footer">
+              <button type="submit" name="outcome" value="{{ step.outcome }}"
+                      class="button button--secondary" data-step-save
+                      {% if not step.outcome %}disabled aria-disabled="true" title="Escolha Passou, Falhou ou Bloqueado para salvar a observação"{% endif %}>Salvar resultado</button>
+              <p class="step-feedback" data-step-feedback aria-live="polite"></p>
+            </div>
+          </form>
+        {% else %}
+          {% if step.observation %}
+            <p>Observação: {{ step.observation }}</p>
+          {% endif %}
+        {% endif %}
+      </li>
+    {% empty %}
+      <li class="muted">Este caso não possui passos registrados.</li>
+    {% endfor %}
+  </ol>
+</section>

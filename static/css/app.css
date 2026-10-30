@@ -793,6 +793,28 @@ form .field--checkbox {
   margin-right: auto;
 }
 
+/* Collapse the step body without ever using the `hidden` attribute (reserved
+   for the script's removed rows). The action preview only appears while the
+   row is collapsed, so a folded step stays identifiable. */
+.step-row.is-collapsed .step-row__body {
+  display: none;
+}
+
+.step-row__preview {
+  display: none;
+}
+
+.step-row.is-collapsed .step-row__preview {
+  display: inline-block;
+  max-width: 40ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+  font-weight: var(--weight-regular);
+  color: var(--color-text-muted);
+}
+
 .button__icon {
   flex: none;
 }
@@ -874,7 +896,6 @@ form .field--checkbox {
 }
 
 .case-step {
-  padding: var(--space-3) var(--space-4);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-left: 4px solid var(--color-primary);
@@ -886,12 +907,40 @@ form .field--checkbox {
   color: var(--color-text-muted);
 }
 
-.case-step__head {
+/* Each step is a native <details>: it collapses without JavaScript. The
+   summary shows only the number, the action and the inactive badge; the
+   expected result lives in the body, revealed on demand. */
+.case-step__summary {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-2);
   margin: 0;
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  list-style: none;
+}
+
+.case-step__summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Chevron affordance: points down when collapsed, up when expanded. */
+.case-step__summary::after {
+  content: "";
+  flex: none;
+  align-self: center;
+  margin-left: auto;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid var(--color-text-muted);
+  border-bottom: 2px solid var(--color-text-muted);
+  transform: rotate(45deg);
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.case-step__details[open] > .case-step__summary::after {
+  transform: rotate(-135deg);
 }
 
 .case-step__number {
@@ -907,8 +956,12 @@ form .field--checkbox {
   font-weight: var(--weight-medium);
 }
 
+.case-step__body {
+  padding: 0 var(--space-4) var(--space-3);
+}
+
 .case-step__expected {
-  margin: var(--space-1) 0 0;
+  margin: 0;
 }
 
 .case-step__label {
@@ -1889,4 +1942,65 @@ form .field--checkbox {
 
 body.modal-open {
   overflow: hidden;
+}
+
+/* =====================================================================
+   Case runner modal (native <dialog>) — execution runner
+   ===================================================================== */
+
+dialog.case-modal {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+}
+
+/* JS-enhanced modal: centered, width-constrained, with a scrim backdrop. */
+dialog.case-modal:modal {
+  width: min(48rem, 100%);
+  max-width: calc(100% - 2rem);
+  max-height: calc(100% - 2rem);
+  margin: auto;
+  overflow: hidden;
+}
+
+dialog.case-modal::backdrop {
+  background: var(--color-scrim);
+}
+
+/* The inner case card becomes the scrollable panel of the modal. */
+dialog.case-modal:modal .execution-case {
+  margin: 0;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+.execution-case__head-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.case-modal__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.case-modal__close:hover {
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+
+.case-modal__close:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: var(--focus-ring-offset);
+  box-shadow: var(--focus-ring);
 }

@@ -1,17 +1,17 @@
 {% load execution_ui %}
 
 {% comment %}
-Read-only monitoring board: one column per derived CaseStatus. No new state is
-introduced — a case with a blocked step stays in "Pendente" and only carries a
-secondary, step-level hint. Nothing here writes data or exposes operation
-controls; "Abrir" only links to the existing execution detail.
+Case board: one column per derived CaseStatus. No new state is introduced — a
+case with a blocked step stays in "Pendente" and only carries a secondary,
+step-level hint. The cards open the case in a modal (`data-case-open`) on both
+the live runner and the completed (read-only) ledger. Nothing here writes data.
 {% endcomment %}
 <section class="board-section" aria-labelledby="case-board-title">
   <div class="board-section__head">
     <h2 id="case-board-title">Quadro da execução</h2>
     <p class="muted">
-      Visão somente leitura dos casos desta execução pela situação derivada.
-      Casos com passo bloqueado permanecem em <strong>Pendente</strong>.
+      Casos desta execução agrupados pela situação derivada. Casos com passo
+      bloqueado permanecem em <strong>Pendente</strong>.
     </p>
   </div>
 
@@ -44,8 +44,9 @@ controls; "Abrir" only links to the existing execution detail.
                   <span class="badge badge--warning">Passo bloqueado</span>
                 </p>
                 <p class="board__card-actions">
-                  <a class="button button--secondary button--sm"
-                     href="{% url 'executions:execution_detail' execution.pk %}#execution-case-{{ execution_case.pk }}-title">Abrir</a>
+                  <button type="button" class="button button--secondary button--sm"
+                          data-case-open="{{ execution_case.pk }}"
+                          aria-haspopup="dialog">Abrir</button>
                 </p>
               </li>
             {% endfor %}
