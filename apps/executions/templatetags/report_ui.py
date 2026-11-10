@@ -1,5 +1,6 @@
 from django import template
 from django.template.defaultfilters import date as format_date
+from django.utils import timezone
 
 register = template.Library()
 
@@ -26,8 +27,12 @@ def comparison_metric_rows(comparison):
     rows = [
         {
             "label": "Concluída em",
-            "base": format_date(base.completed_at, "d/m/Y H:i"),
-            "against": format_date(against.completed_at, "d/m/Y H:i"),
+            "base": format_date(
+                timezone.localtime(base.completed_at), "d/m/Y H:i"
+            ),
+            "against": format_date(
+                timezone.localtime(against.completed_at), "d/m/Y H:i"
+            ),
             "differs": False,
         }
     ]

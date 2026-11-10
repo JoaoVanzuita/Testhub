@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 from apps.accounts.models import Role
 from apps.testcases.models import TestCase
@@ -19,7 +20,9 @@ class HistoryComparisonForm(forms.Form):
         for summary in summaries or []:
             execution = summary.execution
             completed = (
-                execution.completed_at.strftime("%d/%m/%Y %H:%M")
+                timezone.localtime(execution.completed_at).strftime(
+                    "%d/%m/%Y %H:%M"
+                )
                 if execution.completed_at
                 else "—"
             )

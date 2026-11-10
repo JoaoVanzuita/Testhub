@@ -2,6 +2,7 @@ import re
 
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.executions import history, services
 from apps.executions.models import AIStatus, Report, StepOutcome
@@ -203,6 +204,14 @@ class ComparisonRowTests(TestCase):
         self.assertEqual(rows["Taxa de sucesso"]["against"], "50.00%")
         self.assertTrue(rows["Taxa de sucesso"]["differs"])
         self.assertFalse(rows["Concluída em"]["differs"])
+        self.assertEqual(
+            rows["Concluída em"]["base"],
+            timezone.localtime(older.completed_at).strftime("%d/%m/%Y %H:%M"),
+        )
+        self.assertEqual(
+            rows["Concluída em"]["against"],
+            timezone.localtime(newer.completed_at).strftime("%d/%m/%Y %H:%M"),
+        )
 
     def test_step_rows_cover_the_recorded_results(self):
         older = self._complete({self.case_a: StepOutcome.FAILED})

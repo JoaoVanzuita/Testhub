@@ -209,6 +209,35 @@ Todas as variáveis são definidas em `.env` (ignorado pelo Git). Os placeholder
    docker compose run --rm web python manage.py process_ai_reports --once
    ```
 
+### Cenário de demonstração OrbitWMS
+
+O comando `seed_orbitwms` cria o cenário usado nas capturas do Capítulo 4 do
+TCC: 1 Administrador, 3 Testadores, 1 Testador inativo, o projeto OrbitWMS,
+5 casos com 22 passos, 3 execuções concluídas (100%, 60% e 40%), 1 execução em
+andamento e análises de IA estáticas para as execuções concluídas. O comando
+está em `apps/executions/management/commands/seed_orbitwms.py`.
+
+Pré-requisitos: ambiente Docker Compose com o banco migrado.
+
+```sh
+docker compose up --build -d
+docker compose run --rm web python manage.py migrate
+docker compose run --rm web python manage.py seed_orbitwms
+```
+
+O comando é idempotente: antes de recriar, remove apenas os registros que ele
+mesmo gerencia (o projeto OrbitWMS e as contas `@orbitwms.local`). Para criar o
+cenário sem as análises de IA estáticas, use:
+
+```sh
+docker compose run --rm web python manage.py seed_orbitwms --no-ai
+```
+
+As análises estáticas servem para as capturas do TCC. Para gerar uma análise
+real, configure as variáveis `AI_PROVIDER_*` e execute
+`process_ai_reports`; sem provedor configurado, o relatório permanece com a
+análise `Indisponível`.
+
 ## Comandos de validação
 
 ```sh
